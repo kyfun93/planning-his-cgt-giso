@@ -2,8 +2,8 @@
 
 // === Configuration Supabase ===
 // ⚠️ REMPLACEZ CES VALEURS PAR VOS CRÉDENTIALS SUPABASE
-const SUPABASE_URL = "VOTRE_SUPABASE_URL"; // Ex: "https://xxxxx.supabase.co"
-const SUPABASE_ANON_KEY = "VOTRE_SUPABASE_ANON_KEY"; // Votre clé anonyme
+const SUPABASE_URL = "https://xierjvlyymyfmhojtseh.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZXJqdmx5eW15Zm1ob2p0c2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDUxODUsImV4cCI6MjA3ODcyMTE4NX0.ZvX_9vKBhy8Bjl6Z-ocLS641r1I5jB7hCC6KC0kox38";
 
 // Initialisation du client Supabase
 // Le script Supabase doit être chargé avant app.js (voir index.html)
