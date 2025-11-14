@@ -25,6 +25,10 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: radial-gradient(circle at top, #141a32 0, #05060b 50%, #02030a 100%);
     color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
   
   /* HEADER */
@@ -70,23 +74,39 @@
     color: var(--text-main);
     border-radius: var(--radius);
     border: 1px solid rgba(0, 229, 255, 0.3);
-    padding: 0.35rem 0.6rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.95rem;
     min-width: 160px;
+    min-height: 44px;
     outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
   }
   
   .pk-select:focus {
     box-shadow: var(--shadow-neon);
+    border-color: var(--border-neon);
   }
   
   .pk-btn {
     border-radius: var(--radius);
-    padding: 0.35rem 0.6rem;
+    padding: 0.5rem 1rem;
     border: none;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+    min-height: 44px; /* Taille minimale pour le tactile */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    touch-action: manipulation; /* Évite le double-tap sur mobile */
+    -webkit-tap-highlight-color: transparent; /* Supprime le highlight bleu sur mobile */
+    will-change: transform;
+    user-select: none;
+    -webkit-user-select: none;
   }
   
   .pk-btn-ghost {
@@ -100,16 +120,28 @@
     box-shadow: var(--shadow-neon);
   }
   
+  .pk-btn:active {
+    transform: translateY(0);
+    transition: transform 0.1s;
+  }
+  
   .pk-month-nav {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.5rem;
+  }
+  
+  .pk-month-nav .pk-btn {
+    min-width: 44px;
+    padding: 0.5rem;
+    font-size: 1rem;
   }
   
   #currentMonthLabel {
     min-width: 130px;
     text-align: center;
     font-weight: 600;
+    font-size: 0.9rem;
   }
   
   /* MENU DÉROULANT HIÉRARCHIQUE COMPACT */
@@ -149,6 +181,9 @@
     box-shadow: var(--shadow-neon);
     z-index: 1000;
     padding: 0.3rem 0;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    will-change: transform, opacity;
   }
   
   .pk-dropdown-hidden {
@@ -160,17 +195,25 @@
   }
   
   .pk-dropdown-link {
-    display: block;
-    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 1rem;
     color: var(--text-main);
     text-decoration: none;
     font-size: 0.9rem;
     transition: background var(--transition-fast);
     cursor: pointer;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   
   .pk-dropdown-link:hover {
     background: var(--bg-panel-alt);
+  }
+  
+  .pk-dropdown-link:active {
+    background: rgba(0, 229, 255, 0.2);
   }
   
   .pk-dropdown-main > .pk-dropdown-link {
@@ -232,6 +275,7 @@
     display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.5rem;
+    contain: layout;
   }
   
   .pk-day {
@@ -246,12 +290,19 @@
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
+    will-change: transform, background;
+    contain: layout style paint;
   }
   
   .pk-day:hover {
     background: #1a1f33;
     transform: translateY(-1px);
     box-shadow: 0 0 10px rgba(0, 229, 255, 0.35);
+  }
+  
+  .pk-day:active {
+    transform: translateY(0);
+    transition: transform 0.1s;
   }
   
   .pk-day--empty {
@@ -292,6 +343,9 @@
     align-items: center;
     justify-content: center;
     padding: 1rem;
+    will-change: opacity;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
   }
   
   .pk-modal-hidden {
@@ -306,6 +360,9 @@
     padding: 0.8rem 0.9rem 1rem;
     border: 1px solid rgba(0, 229, 255, 0.4);
     box-shadow: var(--shadow-neon);
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
   }
   
   .pk-modal-header {
@@ -372,7 +429,209 @@
   .pk-slot-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.35rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  
+  .pk-slot-actions .pk-btn {
+    min-height: 40px;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+  }
+  
+  /* MINI CALENDRIER */
+  
+  .pk-mini-calendar {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 0.3rem;
+    width: 100%;
+    max-width: 280px;
+    background: var(--bg-panel);
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-neon);
+    z-index: 1001;
+    padding: 0.6rem;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+  
+  .pk-mini-calendar-hidden {
+    display: none;
+  }
+  
+  .pk-mini-calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+  }
+  
+  .pk-mini-calendar-month {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-main);
+  }
+  
+  .pk-mini-calendar-nav {
+    background: transparent;
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    color: var(--text-main);
+    border-radius: 4px;
+    padding: 0.2rem 0.4rem;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: all var(--transition-fast);
+  }
+  
+  .pk-mini-calendar-nav:hover {
+    background: var(--bg-panel-alt);
+    border-color: var(--border-neon);
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  }
+  
+  .pk-mini-calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.2rem;
+  }
+  
+  .pk-mini-calendar-day-name {
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.3rem 0;
+  }
+  
+  .pk-mini-calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    background: var(--bg-panel-alt);
+    border: 1px solid transparent;
+  }
+  
+  .pk-mini-calendar-day:hover {
+    background: rgba(0, 229, 255, 0.2);
+    border-color: var(--border-neon);
+    transform: scale(1.1);
+    box-shadow: 0 0 6px rgba(0, 229, 255, 0.3);
+  }
+  
+  .pk-mini-calendar-day--empty {
+    background: transparent;
+    cursor: default;
+  }
+  
+  .pk-mini-calendar-day--empty:hover {
+    transform: none;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+  
+  .pk-mini-calendar-day--today {
+    background: rgba(255, 77, 240, 0.2);
+    border-color: var(--accent);
+    font-weight: 700;
+    box-shadow: 0 0 8px rgba(255, 77, 240, 0.4);
+  }
+  
+  .pk-mini-calendar-day--past {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  
+  .pk-mini-calendar-day--past:hover {
+    background: var(--bg-panel-alt);
+    border-color: transparent;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* MODALE FORMULAIRE */
+  
+  .pk-modal-form {
+    padding: 1rem 0;
+  }
+  
+  .pk-form-group {
+    margin-bottom: 1.25rem;
+    position: relative;
+  }
+  
+  .pk-form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  
+  .pk-form-input {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+  }
+  
+  .pk-modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 229, 255, 0.2);
+  }
+  
+  .pk-btn-full {
+    width: 100%;
+    min-height: 48px;
+    font-size: 1rem;
+  }
+  
+  .pk-btn-add-slot {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(255, 77, 240, 0.2));
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    color: var(--text-main);
+  }
+  
+  .pk-btn-add-slot:hover {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.3), rgba(255, 77, 240, 0.3));
+    box-shadow: var(--shadow-neon);
+  }
+  
+  .pk-btn-danger {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.4);
+    color: #ff6b7a;
+  }
+  
+  .pk-btn-danger:hover {
+    background: rgba(220, 53, 69, 0.3);
+    box-shadow: 0 0 12px rgba(220, 53, 69, 0.5);
+  }
+  
+  .pk-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+  
+  .pk-panel-header .pk-panel-title {
+    margin: 0;
   }
   
   /* RESPONSIVE */
@@ -380,16 +639,224 @@
   @media (max-width: 768px) {
     .pk-calendar {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.4rem;
     }
   
     .pk-header {
       flex-direction: column;
       align-items: flex-start;
+      padding: 0.6rem 0.8rem;
     }
   
     .pk-header-filters {
       width: 100%;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.6rem;
+    }
+    
+    .pk-header-filters > * {
+      width: 100%;
+    }
+    
+    .pk-select {
+      width: 100%;
+      min-width: auto;
+    }
+    
+    .pk-month-nav {
+      width: 100%;
       justify-content: space-between;
+    }
+    
+    .pk-month-nav .pk-btn {
+      flex: 1;
+      max-width: 60px;
+    }
+    
+    #currentMonthLabel {
+      flex: 1;
+      min-width: auto;
+    }
+    
+    .pk-panel-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.8rem;
+    }
+    
+    .pk-panel-header .pk-btn {
+      width: 100%;
+    }
+    
+    .pk-mini-calendar {
+      max-width: 100%;
+      left: 0;
+      right: 0;
+    }
+    
+    .pk-dropdown-content {
+      max-height: 70vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .pk-header-title h1 {
+      font-size: 1.1rem;
+    }
+    
+    .pk-header-title p {
+      font-size: 0.75rem;
+    }
+    
+    .pk-calendar {
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    
+    .pk-day {
+      min-height: 100px;
+    }
+    
+    .pk-modal {
+      padding: 0;
+      align-items: flex-end;
+    }
+    
+    .pk-modal-content {
+      width: 100%;
+      max-width: 100%;
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
+      max-height: 90vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      margin: 0;
+      transform: translate3d(0, 0, 0);
+      -webkit-transform: translate3d(0, 0, 0);
+    }
+    
+    .pk-modal-header {
+      position: sticky;
+      top: 0;
+      background: var(--bg-panel);
+      z-index: 1;
+      padding-bottom: 0.8rem;
+      margin-bottom: 0.8rem;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    }
+    
+    .pk-modal-header .pk-btn {
+      min-width: 44px;
+      min-height: 44px;
+      padding: 0.5rem;
+      font-size: 1.2rem;
+    }
+    
+    .pk-modal-footer {
+      position: sticky;
+      bottom: 0;
+      background: var(--bg-panel);
+      margin-top: 1rem;
+      padding-top: 1rem;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    
+    .pk-modal-footer .pk-btn {
+      width: 100%;
+      min-height: 50px;
+      font-size: 1rem;
+    }
+    
+    .pk-form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .pk-form-label {
+      font-size: 1rem;
+      margin-bottom: 0.6rem;
+    }
+    
+    .pk-form-input {
+      min-height: 48px;
+      font-size: 1rem;
+      padding: 0.7rem 1rem;
+    }
+    
+    .pk-btn {
+      min-height: 48px;
+      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+    }
+    
+    .pk-slot-card {
+      padding: 0.8rem;
+      font-size: 0.9rem;
+    }
+    
+    .pk-slot-actions {
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    
+    .pk-slot-actions .pk-btn {
+      width: 100%;
+      min-height: 48px;
+    }
+    
+    .pk-mini-calendar {
+      padding: 0.6rem;
+      max-width: 100%;
+    }
+    
+    .pk-mini-calendar-day {
+      font-size: 0.8rem;
+      min-height: 36px;
+    }
+    
+    .pk-mini-calendar-nav {
+      min-width: 36px;
+      min-height: 36px;
+      padding: 0.4rem;
+    }
+    
+    .pk-panel-header {
+      margin-bottom: 1rem;
+    }
+    
+    .pk-panel-header .pk-panel-title {
+      font-size: 0.9rem;
+    }
+    
+    .pk-main {
+      padding: 0.8rem;
+    }
+    
+    .pk-panel > *:not(.pk-panel-title) {
+      padding: 0.6rem;
+    }
+  }
+  
+  /* Amélioration du tactile pour tous les écrans */
+  @media (hover: none) and (pointer: coarse) {
+    .pk-btn {
+      min-height: 44px;
+    }
+    
+    .pk-day {
+      min-height: 90px;
+    }
+    
+    .pk-dropdown-link {
+      padding: 0.6rem 0.8rem;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
     }
   }
   
