@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Planning HIS – CGT GISO</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="pk-header">
+    <div class="pk-header-title">
+      <h1>PLANNING HIS CGT GISO</h1>
+      <p>IP – VOIE / GISO</p>
+    </div>
+    <div class="pk-header-filters">
+      <!-- Menu de sélection hiérarchique compact -->
+      <div class="pk-dropdown-menu">
+        <button id="mainDropdownBtn" class="pk-btn pk-btn-dropdown">
+          <span id="selectionDisplay">Sélectionner un site</span>
+          <span class="pk-dropdown-arrow">▼</span>
+        </button>
+        <div id="dropdownMenu" class="pk-dropdown-content pk-dropdown-hidden">
+          <!-- rempli par JS -->
+        </div>
+      </div>
+
+      <select id="colleagueSelect" class="pk-select">
+        <!-- rempli par JS -->
+      </select>
+
+      <div class="pk-month-nav">
+        <button id="prevMonth" class="pk-btn pk-btn-ghost">◀</button>
+        <span id="currentMonthLabel"></span>
+        <button id="nextMonth" class="pk-btn pk-btn-ghost">▶</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="pk-main">
+    <section class="pk-panel">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+        <h2 class="pk-panel-title" style="margin: 0;">Mois en cours</h2>
+        <button id="addSlotBtn" class="pk-btn" style="font-size: 0.85rem;">+ Ajouter un créneau</button>
+      </div>
+      <div id="calendar" class="pk-calendar">
+        <!-- calendrier généré par JS -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Modale détail d'un jour -->
+  <div id="dayModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content">
+      <div class="pk-modal-header">
+        <h3 id="dayModalTitle"></h3>
+        <button id="closeDayModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="daySlotsContainer" class="pk-slots-list">
+        <!-- slots du jour -->
+      </div>
+      <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(0, 229, 255, 0.2);">
+        <button id="addSlotInDayModal" class="pk-btn" style="width: 100%; font-size: 0.85rem;">+ Ajouter une HIS pour ce jour</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale ajouter un créneau -->
+  <div id="addSlotModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content" style="max-width: 500px;">
+      <div class="pk-modal-header">
+        <h3>Ajouter un créneau HIS</h3>
+        <button id="closeAddSlotModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div style="padding: 0.5rem 0;">
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-muted);">Date :</label>
+          <input type="date" id="newSlotDate" class="pk-select" style="width: 100%;" required>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-muted);">Site (A) :</label>
+          <select id="newSlotMainId" class="pk-select" style="width: 100%;" required>
+            <!-- rempli par JS -->
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-muted);">Sous-site (B) :</label>
+          <select id="newSlotSubId" class="pk-select" style="width: 100%;" required>
+            <!-- rempli par JS -->
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-muted);">Type (C) :</label>
+          <select id="newSlotType" class="pk-select" style="width: 100%;" required>
+            <!-- rempli par JS -->
+          </select>
+        </div>
+        <div style="margin-bottom: 1rem;">
+          <label style="display: block; margin-bottom: 0.4rem; font-size: 0.9rem; color: var(--text-muted);">Nombre de places max :</label>
+          <input type="number" id="newSlotMaxPlaces" class="pk-select" style="width: 100%;" min="1" value="3" required>
+        </div>
+        <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+          <button id="cancelAddSlot" class="pk-btn pk-btn-ghost">Annuler</button>
+          <button id="saveSlot" class="pk-btn">Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- *** TRÈS IMPORTANT : chargement du JS *** -->
+  <!-- Supabase doit être chargé avant app.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1083 @@
+// Planning HIS avec Supabase backend
+
+// === Configuration Supabase ===
+// ⚠️ REMPLACEZ CES VALEURS PAR VOS CRÉDENTIALS SUPABASE
+const SUPABASE_URL = "VOTRE_SUPABASE_URL"; // Ex: "https://xxxxx.supabase.co"
+const SUPABASE_ANON_KEY = "VOTRE_SUPABASE_ANON_KEY"; // Votre clé anonyme
+
+// Initialisation du client Supabase
+// Le script Supabase doit être chargé avant app.js (voir index.html)
+let supabase = null;
+
+function initSupabase() {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== "VOTRE_SUPABASE_URL") {
+    try {
+      // Supabase est disponible globalement via le CDN
+      // La variable peut être supabaseJs, supabase, ou window.supabaseJs selon la version
+      const supabaseLib = window.supabaseJs || window.supabase || (typeof supabaseJs !== "undefined" ? supabaseJs : null);
+      
+      if (supabaseLib && supabaseLib.createClient) {
+        supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("✅ Client Supabase initialisé");
+        return true;
+      } else {
+        console.warn("⚠️ Supabase JS non chargé. Vérifiez que le script est bien inclus dans index.html");
+        return false;
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de l'initialisation de Supabase:", error);
+      return false;
+    }
+  } else {
+    console.warn("⚠️ Supabase non configuré. Veuillez remplir SUPABASE_URL et SUPABASE_ANON_KEY dans app.js");
+    return false;
+  }
+}
+
+// Initialiser Supabase au chargement
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initSupabase);
+} else {
+  initSupabase();
+}
+
+// === Année de démo = année actuelle ===
+const DEMO_YEAR = new Date().getFullYear();
+const DEMO_YEAR_STR = String(DEMO_YEAR);
+
+// --- Données ---
+
+const COLLEAGUES = [
+  { id: "david_lecler", name: "David LECLER" },
+  { id: "maxime_de_aguiar", name: "Maxime DE AGUIAR" },
+  { id: "pascal_akriche", name: "Pascal AKRICHE" },
+  { id: "jeanrene_morvan", name: "Jean-René MORVAN" },
+  { id: "sebastien_lesgent", name: "Sébastien LESGENT" },
+  { id: "mamadou_diallo", name: "Mamadou DIALLO" },
+  { id: "michael_bureau", name: "Michael BUREAU" },
+  { id: "stephane_tondut", name: "Stéphane TONDUT" },
+  { id: "samir_jablaoui", name: "Samir JABLAOUI" },
+  { id: "jerome_godefroy", name: "Jérôme GODEFROY" },
+  { id: "fabrice_keller", name: "Fabrice KELLER" },
+  { id: "demba_semega", name: "Demba SEMEGA" },
+  { id: "tarris_andet", name: "Tarris ANDET" },
+  { id: "lamini_magassa", name: "Lamini MAGASSA" },
+  { id: "benjamin_brouchet", name: "Benjamin BROUCHET" },
+  { id: "wilfried_van_niel", name: "Wilfried VAN NIEL" },
+  { id: "andre_bazin", name: "André BAZIN" }
+];
+
+// Structure hiérarchique des attachements
+// Format: { mainId, mainLabel, subId, subLabel, slotType }
+const ATTACHMENT_HIERARCHY = [
+  // VOIE
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_massy", subLabel: "Massy", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_massy", subLabel: "Massy", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_pontoise", subLabel: "Pontoise", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_pontoise", subLabel: "Pontoise", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_republique", subLabel: "République", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_republique", subLabel: "République", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_vsa", subLabel: "VSA", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_villette", subLabel: "Villette", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_villette", subLabel: "Villette", slotType: "Nuit" },
+  // MCBT
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "équipe nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "équipe jour" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vdf", subLabel: "VDF", slotType: "équipe nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vdf", subLabel: "VDF", slotType: "équipe jour" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "équipe nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "équipe jour" },
+  // EMHT
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_tgv", subLabel: "TGV", slotType: "PEF" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "PEF Cables" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_denfert", subLabel: "Denfert", slotType: "VDF" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_traction_m", subLabel: "Traction M", slotType: "" },
+  // CT
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sig_3x8", subLabel: "Bourdon SIG 3x8", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sig_2x8", subLabel: "Bourdon SIG 2x8", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_ims_stomatologue", subLabel: "IMS Stomatologue", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_ims_biologie", subLabel: "IMS Biologie", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_ims_pst", subLabel: "IMS PST", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_mc", subLabel: "Bourdon MC", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_vdf", subLabel: "Bourdon VDF", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sig", subLabel: "Bourdon SIG", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_mc", subLabel: "Bourdon MC", slotType: "Nuit" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_vdf", subLabel: "Bourdon VDF", slotType: "Nuit" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sig", subLabel: "Bourdon SIG", slotType: "Après-Midi" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_e_sae_m", subLabel: "Bourdon E SAE M", slotType: "Nuit" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_vdf", subLabel: "Bourdon VDF", slotType: "Après-Midi" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_joinville", subLabel: "Joinville", slotType: "Nuit" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_joinville", subLabel: "Joinville", slotType: "Après-Midi" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_joinville", subLabel: "Joinville", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_blr", subLabel: "BLR", slotType: "Nuit" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_blr", subLabel: "BLR", slotType: "Après-Midi" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_barbes", subLabel: "BARBES", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_barbes", subLabel: "BARBES", slotType: "Nuit" },
+  // ESG
+  { mainId: "esg", mainLabel: "ESG", subId: "esg_vsa", subLabel: "VSA", slotType: "Après-Midi" },
+  { mainId: "esg", mainLabel: "ESG", subId: "esg_jour", subLabel: "", slotType: "Jour" },
+  { mainId: "esg", mainLabel: "ESG", subId: "esg_jour_vdf", subLabel: "", slotType: "Jour VDF" },
+  // CPMO
+  { mainId: "cpmo", mainLabel: "CPMO", subId: "cpmo_nuit_chancy", subLabel: "", slotType: "Nuit Chancy" }
+];
+
+// Fonction pour obtenir les attachements principaux uniques
+function getMainAttachments() {
+  const unique = new Map();
+  ATTACHMENT_HIERARCHY.forEach(item => {
+    if (!unique.has(item.mainId)) {
+      unique.set(item.mainId, { id: item.mainId, label: item.mainLabel });
+    }
+  });
+  return Array.from(unique.values());
+}
+
+// Fonction pour obtenir les sous-attachements selon l'attachement principal
+function getSubAttachments(mainId) {
+  if (!mainId) return [];
+  const unique = new Map();
+  ATTACHMENT_HIERARCHY
+    .filter(item => item.mainId === mainId)
+    .forEach(item => {
+      if (!unique.has(item.subId)) {
+        unique.set(item.subId, { 
+          id: item.subId, 
+          label: item.subLabel || item.subId 
+        });
+      }
+    });
+  return Array.from(unique.values());
+}
+
+// Fonction pour obtenir les types de slots selon mainId et subId
+function getSlotTypes(mainId, subId) {
+  if (!mainId) return [];
+  return ATTACHMENT_HIERARCHY
+    .filter(item => item.mainId === mainId && item.subId === subId)
+    .map(item => item.slotType)
+    .filter((type, index, arr) => arr.indexOf(type) === index); // unique
+}
+
+// --- État ---
+
+const state = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth(), // 0-11
+  selectedMainId: "all",      // "all" pour tous les sites, ou un mainId spécifique
+  selectedSubId: "all",        // "all" pour tous les sous-sites, ou un subId spécifique
+  selectedSlotType: "all",     // "all" pour tous les types, ou un slotType spécifique
+  selectedColleagueId: "",
+  step: "A",                 // étape actuelle : A, B, ou C
+  slots: [],                 // slots chargés depuis Supabase
+  registrations: []          // inscriptions chargées depuis Supabase
+};
+
+const monthNames = [
+  "janvier",
+  "février",
+  "mars",
+  "avril",
+  "mai",
+  "juin",
+  "juillet",
+  "août",
+  "septembre",
+  "octobre",
+  "novembre",
+  "décembre"
+];
+
+// === Fonctions Supabase ===
+
+// Charger les slots pour un mois donné
+async function loadSlotsForMonth(year, month) {
+  if (!supabase) {
+    console.warn("⚠️ Supabase non configuré, utilisation de données vides");
+    return [];
+  }
+
+  try {
+    // Calculer le premier et dernier jour du mois
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = formatDateForDB(firstDay);
+    const endDate = formatDateForDB(lastDay);
+
+    const { data, error } = await supabase
+      .from("his_slots")
+      .select("*")
+      .gte("date", startDate)
+      .lte("date", endDate)
+      .order("date", { ascending: true });
+
+    if (error) {
+      console.error("❌ Erreur lors du chargement des slots:", error);
+      return [];
+    }
+
+    console.log(`✅ ${data.length} slot(s) chargé(s) pour ${monthNames[month]} ${year}`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ Erreur lors du chargement des slots:", error);
+    return [];
+  }
+}
+
+// Charger toutes les inscriptions
+async function loadRegistrations() {
+  if (!supabase) {
+    console.warn("⚠️ Supabase non configuré, utilisation de données vides");
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("his_registrations")
+      .select("*");
+
+    if (error) {
+      console.error("❌ Erreur lors du chargement des inscriptions:", error);
+      return [];
+    }
+
+    console.log(`✅ ${data.length} inscription(s) chargée(s)`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ Erreur lors du chargement des inscriptions:", error);
+    return [];
+  }
+}
+
+// Créer un nouveau slot
+async function createSlot(slotData) {
+  if (!supabase) {
+    console.error("❌ Supabase non configuré");
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("his_slots")
+      .insert([slotData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Erreur lors de la création du slot:", error);
+      throw error;
+    }
+
+    console.log("✅ Slot créé:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Erreur lors de la création du slot:", error);
+    throw error;
+  }
+}
+
+// S'inscrire à un slot
+async function registerToSlot(slotId, colleagueId) {
+  if (!supabase) {
+    console.error("❌ Supabase non configuré");
+    return null;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("his_registrations")
+      .insert([{ slot_id: slotId, colleague_id: colleagueId }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("❌ Erreur lors de l'inscription:", error);
+      throw error;
+    }
+
+    console.log("✅ Inscription créée:", data);
+    return data;
+  } catch (error) {
+    console.error("❌ Erreur lors de l'inscription:", error);
+    throw error;
+  }
+}
+
+// Se désinscrire d'un slot
+async function unregisterFromSlot(slotId, colleagueId) {
+  if (!supabase) {
+    console.error("❌ Supabase non configuré");
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from("his_registrations")
+      .delete()
+      .eq("slot_id", slotId)
+      .eq("colleague_id", colleagueId);
+
+    if (error) {
+      console.error("❌ Erreur lors de la désinscription:", error);
+      throw error;
+    }
+
+    console.log("✅ Désinscription réussie");
+    return true;
+  } catch (error) {
+    console.error("❌ Erreur lors de la désinscription:", error);
+    throw error;
+  }
+}
+
+// Utilitaires pour les dates
+function formatDateForDB(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatDate(year, monthIndex, day) {
+  const m = String(monthIndex + 1).padStart(2, "0");
+  const d = String(day).padStart(2, "0");
+  return `${year}-${m}-${d}`;
+}
+
+// --- Initialisation ---
+
+document.addEventListener("DOMContentLoaded", async () => {
+  console.log("🚀 Initialisation de l'application");
+  
+  // S'assurer que Supabase est initialisé
+  if (!supabase) {
+    initSupabase();
+  }
+  
+  initSteps();
+  initColleagueSelect();
+  initMonthNav();
+  initModal();
+  initAddSlotModal();
+  
+  // Charger les données depuis Supabase
+  await refreshData();
+  
+  // Afficher "Tous les sites" par défaut
+  const selectionDisplay = document.getElementById("selectionDisplay");
+  if (selectionDisplay) {
+    selectionDisplay.textContent = "Tous les sites → Vue globale";
+  }
+  
+  renderCalendar();
+  console.log("✅ Initialisation terminée");
+});
+
+// Fonction pour rafraîchir les données depuis Supabase
+async function refreshData() {
+  // Charger les slots du mois courant
+  state.slots = await loadSlotsForMonth(state.currentYear, state.currentMonth);
+  
+  // Charger toutes les inscriptions
+  state.registrations = await loadRegistrations();
+}
+
+// --- Menu déroulant hiérarchique compact ---
+
+function initSteps() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  const mainDropdownBtn = document.getElementById("mainDropdownBtn");
+  const selectionDisplay = document.getElementById("selectionDisplay");
+  
+  if (!dropdownMenu || !mainDropdownBtn || !selectionDisplay) return;
+
+  dropdownMenu.innerHTML = "";
+
+  // Ajouter "Tous les sites" en premier
+  const allSitesItem = document.createElement("div");
+  allSitesItem.className = "pk-dropdown-item pk-dropdown-main";
+  
+  const allSitesLink = document.createElement("a");
+  allSitesLink.href = "#";
+  allSitesLink.textContent = "Tous les sites";
+  allSitesLink.className = "pk-dropdown-link";
+  allSitesLink.style.fontWeight = "700";
+  allSitesLink.style.color = "var(--accent)";
+  allSitesLink.addEventListener("click", async (e) => {
+    e.preventDefault();
+    // Sélectionner "Tous les sites"
+    state.selectedMainId = "all";
+    state.selectedSubId = "all";
+    state.selectedSlotType = "all";
+    
+    // Mettre à jour l'affichage
+    selectionDisplay.textContent = "Tous les sites → Vue globale";
+    
+    // Fermer le menu
+    closeDropdown();
+    
+    // Recharger les données et afficher le calendrier
+    await refreshData();
+    renderCalendar();
+  });
+  
+  allSitesItem.appendChild(allSitesLink);
+  dropdownMenu.appendChild(allSitesItem);
+
+  // Séparateur visuel
+  const separator = document.createElement("div");
+  separator.style.height = "1px";
+  separator.style.background = "rgba(0, 229, 255, 0.2)";
+  separator.style.margin = "0.3rem 0";
+  dropdownMenu.appendChild(separator);
+
+  // Créer le menu hiérarchique
+  getMainAttachments().forEach(main => {
+    const mainItem = document.createElement("div");
+    mainItem.className = "pk-dropdown-item pk-dropdown-main";
+    
+    const mainLink = document.createElement("a");
+    mainLink.href = "#";
+    mainLink.textContent = main.label;
+    mainLink.className = "pk-dropdown-link";
+    mainLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleSubmenu(mainItem, main.id);
+    });
+    
+    const subMenu = document.createElement("div");
+    subMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
+    subMenu.dataset.mainId = main.id;
+    
+    // Créer les sous-éléments (B)
+    const subAttachments = getSubAttachments(main.id);
+    subAttachments.forEach(sub => {
+      const subItem = document.createElement("div");
+      subItem.className = "pk-dropdown-item pk-dropdown-sub";
+      
+      const subLink = document.createElement("a");
+      subLink.href = "#";
+      subLink.textContent = sub.label;
+      subLink.className = "pk-dropdown-link";
+      subLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        toggleSlotMenu(subItem, main.id, sub.id);
+      });
+      
+      const slotMenu = document.createElement("div");
+      slotMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
+      slotMenu.dataset.mainId = main.id;
+      slotMenu.dataset.subId = sub.id;
+      
+      // Créer les types de slots (C)
+      const slotTypes = getSlotTypes(main.id, sub.id);
+      slotTypes.forEach(slotType => {
+        const slotItem = document.createElement("div");
+        slotItem.className = "pk-dropdown-item pk-dropdown-slot";
+        
+        const slotLink = document.createElement("a");
+        slotLink.href = "#";
+        slotLink.textContent = slotType || "(sans type)";
+        slotLink.className = "pk-dropdown-link";
+        slotLink.addEventListener("click", async (e) => {
+          e.preventDefault();
+          // Valider la sélection
+          state.selectedMainId = main.id;
+          state.selectedSubId = sub.id;
+          state.selectedSlotType = slotType;
+          
+          // Mettre à jour l'affichage
+          const mainLabel = getMainAttachmentLabel(main.id);
+          const subLabel = getSubAttachmentLabel(sub.id);
+          selectionDisplay.textContent = `${mainLabel} → ${subLabel} → ${slotType}`;
+          
+          // Fermer le menu
+          closeDropdown();
+          
+          // Recharger les données et afficher le calendrier
+          await refreshData();
+          renderCalendar();
+        });
+        
+        slotItem.appendChild(slotLink);
+        slotMenu.appendChild(slotItem);
+      });
+      
+      subItem.appendChild(subLink);
+      subItem.appendChild(slotMenu);
+      subMenu.appendChild(subItem);
+    });
+    
+    mainItem.appendChild(mainLink);
+    mainItem.appendChild(subMenu);
+    dropdownMenu.appendChild(mainItem);
+  });
+
+  // Ouvrir/fermer le menu principal
+  mainDropdownBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleDropdown();
+  });
+
+  // Fermer le menu si on clique ailleurs
+  document.addEventListener("click", (e) => {
+    if (!dropdownMenu.contains(e.target) && !mainDropdownBtn.contains(e.target)) {
+      closeDropdown();
+    }
+  });
+}
+
+function toggleDropdown() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  const dropdownArrow = document.querySelector(".pk-dropdown-arrow");
+  if (dropdownMenu) {
+    const isHidden = dropdownMenu.classList.contains("pk-dropdown-hidden");
+    dropdownMenu.classList.toggle("pk-dropdown-hidden");
+    if (dropdownArrow) {
+      dropdownArrow.style.transform = isHidden ? "rotate(180deg)" : "rotate(0deg)";
+    }
+  }
+}
+
+function closeDropdown() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  const dropdownArrow = document.querySelector(".pk-dropdown-arrow");
+  if (dropdownMenu) {
+    dropdownMenu.classList.add("pk-dropdown-hidden");
+    // Fermer tous les sous-menus
+    document.querySelectorAll(".pk-dropdown-submenu").forEach(menu => {
+      menu.classList.add("pk-dropdown-hidden");
+    });
+    if (dropdownArrow) {
+      dropdownArrow.style.transform = "rotate(0deg)";
+    }
+  }
+}
+
+function toggleSubmenu(mainItem, mainId) {
+  const subMenu = mainItem.querySelector(".pk-dropdown-submenu");
+  if (!subMenu) return;
+  
+  // Fermer tous les autres sous-menus de niveau principal
+  document.querySelectorAll(".pk-dropdown-submenu[data-main-id]").forEach(menu => {
+    if (menu !== subMenu) {
+      menu.classList.add("pk-dropdown-hidden");
+    }
+  });
+  
+  // Toggle le sous-menu
+  subMenu.classList.toggle("pk-dropdown-hidden");
+}
+
+function toggleSlotMenu(subItem, mainId, subId) {
+  const slotMenu = subItem.querySelector(".pk-dropdown-submenu");
+  if (!slotMenu) return;
+  
+  // Fermer tous les autres sous-menus de slots
+  document.querySelectorAll(".pk-dropdown-submenu[data-sub-id]").forEach(menu => {
+    if (menu !== slotMenu) {
+      menu.classList.add("pk-dropdown-hidden");
+    }
+  });
+  
+  // Toggle le menu de slots
+  slotMenu.classList.toggle("pk-dropdown-hidden");
+}
+
+// --- Sélecteur collègues ---
+
+function initColleagueSelect() {
+  const collSelect = document.getElementById("colleagueSelect");
+  if (!collSelect) return;
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Je suis…";
+  collSelect.appendChild(placeholder);
+
+  COLLEAGUES.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    collSelect.appendChild(opt);
+  });
+
+  collSelect.addEventListener("change", () => {
+    state.selectedColleagueId = collSelect.value;
+    const modal = document.getElementById("dayModal");
+    if (modal && !modal.classList.contains("pk-modal-hidden") && modal.dataset.date) {
+      openDayModal(modal.dataset.date);
+    }
+  });
+}
+
+// --- Navigation mois ---
+
+function initMonthNav() {
+  const prevBtn = document.getElementById("prevMonth");
+  const nextBtn = document.getElementById("nextMonth");
+
+  prevBtn.addEventListener("click", async () => {
+    state.currentMonth--;
+    if (state.currentMonth < 0) {
+      state.currentMonth = 11;
+      state.currentYear--;
+    }
+    await refreshData();
+    renderCalendar();
+  });
+
+  nextBtn.addEventListener("click", async () => {
+    state.currentMonth++;
+    if (state.currentMonth > 11) {
+      state.currentMonth = 0;
+      state.currentYear++;
+    }
+    await refreshData();
+    renderCalendar();
+  });
+}
+
+// --- Rendu calendrier ---
+
+function renderCalendar() {
+  // Si "Tous les sites" est sélectionné, on peut afficher directement
+  // Sinon, vérifier que toutes les étapes sont validées
+  if (state.selectedMainId !== "all" && (!state.selectedMainId || !state.selectedSubId || !state.selectedSlotType)) {
+    const cal = document.getElementById("calendar");
+    if (cal) {
+      cal.innerHTML = "<p style='text-align: center; padding: 2rem; color: var(--text-muted);'>Veuillez compléter les étapes A, B et C pour afficher le calendrier, ou sélectionnez 'Tous les sites' pour une vue globale.</p>";
+    }
+    return;
+  }
+
+  const cal = document.getElementById("calendar");
+  const monthLabel = document.getElementById("currentMonthLabel");
+  if (!cal || !monthLabel) {
+    console.error("❌ Éléments calendrier non trouvés");
+    return;
+  }
+  
+  cal.innerHTML = "";
+
+  monthLabel.textContent =
+    monthNames[state.currentMonth] + " " + state.currentYear;
+
+  const year = state.currentYear;
+  const month = state.currentMonth;
+
+  const firstDay = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // on veut commencer par lundi
+  const startOffset = (firstDay.getDay() + 6) % 7;
+
+  // cases vides avant le 1er
+  for (let i = 0; i < startOffset; i++) {
+    const empty = document.createElement("div");
+    empty.className = "pk-day pk-day--empty";
+    cal.appendChild(empty);
+  }
+
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth();
+  const todayD = today.getDate();
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dateStr = formatDate(year, month, day);
+
+    const dayDiv = document.createElement("div");
+    dayDiv.className = "pk-day";
+    dayDiv.dataset.date = dateStr;
+
+    const num = document.createElement("div");
+    num.className = "pk-day-number";
+    num.textContent = day;
+    dayDiv.appendChild(num);
+
+    // Filtrage selon mainId, subId et slotType (ou "all" pour tout afficher)
+    const daySlots = state.slots.filter(s => {
+      if (s.date !== dateStr) return false;
+      if (state.selectedMainId !== "all" && s.main_id !== state.selectedMainId) return false;
+      if (state.selectedSubId !== "all" && s.sub_id !== state.selectedSubId) return false;
+      if (state.selectedSlotType !== "all" && s.slot_type !== state.selectedSlotType) return false;
+      return true;
+    });
+
+    const summary = document.createElement("div");
+    summary.className = "pk-day-slots-summary";
+
+    if (daySlots.length === 0) {
+      summary.textContent = "Aucun HIS";
+    } else {
+      summary.innerHTML = daySlots
+        .map(slot => {
+          const count = state.registrations.filter(r => r.slot_id === slot.id).length;
+          // Si vue globale, afficher le site complet, sinon juste le label
+          if (state.selectedMainId === "all") {
+            const mainLabel = getMainAttachmentLabel(slot.main_id);
+            const subLabel = getSubAttachmentLabel(slot.sub_id);
+            return `${mainLabel} → ${subLabel} → ${slot.slot_type} : ${count}/${slot.max_places}`;
+          } else {
+            const mainLabel = getMainAttachmentLabel(slot.main_id);
+            const subLabel = getSubAttachmentLabel(slot.sub_id);
+            const displayLabel = subLabel ? `${subLabel} – ${slot.label || slot.slot_type}` : `${mainLabel} – ${slot.label || slot.slot_type}`;
+            return `${displayLabel} : ${count}/${slot.max_places}`;
+          }
+        })
+        .join("<br>");
+    }
+
+    dayDiv.appendChild(summary);
+
+    // style past / today
+    if (year === todayY && month === todayM && day === todayD) {
+      dayDiv.classList.add("pk-day--today");
+    } else {
+      const cellDate = new Date(year, month, day);
+      if (cellDate < new Date(todayY, todayM, todayD)) {
+        dayDiv.classList.add("pk-day--past");
+      }
+    }
+
+    if (daySlots.length > 0) {
+      dayDiv.style.cursor = "pointer";
+      dayDiv.addEventListener("click", () => openDayModal(dateStr));
+    } else {
+      dayDiv.style.cursor = "default";
+    }
+
+    cal.appendChild(dayDiv);
+  }
+}
+
+// --- Modale ---
+
+function initModal() {
+  const closeBtn = document.getElementById("closeDayModal");
+  const modal = document.getElementById("dayModal");
+
+  if (!closeBtn || !modal) {
+    console.error("❌ Éléments modale non trouvés");
+    return;
+  }
+  
+  closeBtn.addEventListener("click", closeDayModal);
+  
+  modal.addEventListener("click", e => {
+    if (e.target === modal) closeDayModal();
+  });
+}
+
+// --- Modale ajouter un créneau ---
+
+function initAddSlotModal() {
+  const addSlotBtn = document.getElementById("addSlotBtn");
+  const addSlotInDayModal = document.getElementById("addSlotInDayModal");
+  const addSlotModal = document.getElementById("addSlotModal");
+  const closeAddSlotModal = document.getElementById("closeAddSlotModal");
+  const cancelAddSlot = document.getElementById("cancelAddSlot");
+  const saveSlot = document.getElementById("saveSlot");
+  const newSlotMainId = document.getElementById("newSlotMainId");
+  const newSlotSubId = document.getElementById("newSlotSubId");
+  const newSlotType = document.getElementById("newSlotType");
+
+  if (!addSlotBtn || !addSlotModal) return;
+
+  // Remplir les sélecteurs
+  getMainAttachments().forEach(main => {
+    const opt = document.createElement("option");
+    opt.value = main.id;
+    opt.textContent = main.label;
+    newSlotMainId.appendChild(opt);
+  });
+
+  newSlotMainId.addEventListener("change", () => {
+    newSlotSubId.innerHTML = "";
+    const subAttachments = getSubAttachments(newSlotMainId.value);
+    subAttachments.forEach(sub => {
+      const opt = document.createElement("option");
+      opt.value = sub.id;
+      opt.textContent = sub.label;
+      newSlotSubId.appendChild(opt);
+    });
+    updateSlotTypeSelect();
+  });
+
+  function updateSlotTypeSelect() {
+    newSlotType.innerHTML = "";
+    if (newSlotMainId.value && newSlotSubId.value) {
+      const slotTypes = getSlotTypes(newSlotMainId.value, newSlotSubId.value);
+      slotTypes.forEach(slotType => {
+        const opt = document.createElement("option");
+        opt.value = slotType;
+        opt.textContent = slotType || "(sans type)";
+        newSlotType.appendChild(opt);
+      });
+    }
+  }
+
+  newSlotSubId.addEventListener("change", updateSlotTypeSelect);
+
+  // Ouvrir la modale depuis le bouton principal
+  addSlotBtn.addEventListener("click", () => {
+    addSlotModal.classList.remove("pk-modal-hidden");
+    document.getElementById("newSlotDate").value = "";
+    newSlotMainId.value = "";
+    newSlotSubId.innerHTML = "";
+    newSlotType.innerHTML = "";
+    document.getElementById("newSlotMaxPlaces").value = "3";
+  });
+
+  // Ouvrir la modale depuis la modale du jour (avec la date pré-remplie)
+  if (addSlotInDayModal) {
+    addSlotInDayModal.addEventListener("click", () => {
+      const dayModal = document.getElementById("dayModal");
+      const dateStr = dayModal ? dayModal.dataset.date : "";
+      
+      addSlotModal.classList.remove("pk-modal-hidden");
+      document.getElementById("newSlotDate").value = dateStr || "";
+      newSlotMainId.value = "";
+      newSlotSubId.innerHTML = "";
+      newSlotType.innerHTML = "";
+      document.getElementById("newSlotMaxPlaces").value = "3";
+      
+      // Fermer la modale du jour
+      closeDayModal();
+    });
+  }
+
+  // Fermer la modale
+  const closeModal = () => {
+    addSlotModal.classList.add("pk-modal-hidden");
+    // Réinitialiser le formulaire
+    document.getElementById("newSlotDate").value = "";
+    newSlotMainId.value = "";
+    newSlotSubId.innerHTML = "";
+    newSlotType.innerHTML = "";
+    document.getElementById("newSlotMaxPlaces").value = "3";
+  };
+
+  closeAddSlotModal.addEventListener("click", closeModal);
+  cancelAddSlot.addEventListener("click", closeModal);
+  addSlotModal.addEventListener("click", e => {
+    if (e.target === addSlotModal) closeModal();
+  });
+
+  // Sauvegarder le nouveau slot
+  saveSlot.addEventListener("click", async () => {
+    const date = document.getElementById("newSlotDate").value;
+    const mainId = newSlotMainId.value;
+    const subId = newSlotSubId.value;
+    const slotType = newSlotType.value;
+    const maxPlaces = parseInt(document.getElementById("newSlotMaxPlaces").value);
+
+    if (!date || !mainId || !subId || !slotType || !maxPlaces) {
+      alert("Veuillez remplir tous les champs");
+      return;
+    }
+
+    try {
+      // Créer le nouveau slot dans Supabase
+      const slotId = `slot_${date}_${subId}_${slotType.replace(/\s+/g, "_")}`;
+      const newSlot = {
+        id: slotId,
+        date: date,
+        main_id: mainId,
+        sub_id: subId,
+        slot_type: slotType,
+        label: slotType,
+        max_places: maxPlaces
+      };
+
+      await createSlot(newSlot);
+
+      // Fermer la modale et rafraîchir
+      closeModal();
+      await refreshData();
+      renderCalendar();
+      
+      console.log("✅ Créneau ajouté:", newSlot);
+    } catch (error) {
+      alert("Erreur lors de l'ajout du créneau. Vérifiez la console pour plus de détails.");
+      console.error("❌ Erreur:", error);
+    }
+  });
+}
+
+function openDayModal(dateStr) {
+  const modal = document.getElementById("dayModal");
+  const title = document.getElementById("dayModalTitle");
+  const container = document.getElementById("daySlotsContainer");
+
+  if (!modal || !title || !container) {
+    console.error("❌ Éléments modale non trouvés");
+    return;
+  }
+  
+  modal.dataset.date = dateStr;
+  container.innerHTML = "";
+
+  const [y, m, d] = dateStr.split("-");
+  const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+  const dateLabel =
+    String(d).padStart(2, "0") +
+    " " +
+    monthNames[dateObj.getMonth()] +
+    " " +
+    dateObj.getFullYear();
+
+  // Filtrage des slots pour ce jour selon mainId, subId et slotType (ou "all" pour tout afficher)
+  let daySlots = state.slots.filter(s => {
+    if (s.date !== dateStr) return false;
+    if (state.selectedMainId !== "all" && s.main_id !== state.selectedMainId) return false;
+    if (state.selectedSubId !== "all" && s.sub_id !== state.selectedSubId) return false;
+    if (state.selectedSlotType !== "all" && s.slot_type !== state.selectedSlotType) return false;
+    return true;
+  });
+
+  // Titre de la modale
+  if (state.selectedMainId === "all") {
+    title.textContent = `${dateLabel} – Tous les sites (vue globale)`;
+  } else {
+    const mainLabel = getMainAttachmentLabel(state.selectedMainId);
+    const subLabel = getSubAttachmentLabel(state.selectedSubId);
+    const slotTypeLabel = state.selectedSlotType !== "all" ? state.selectedSlotType : "";
+    title.textContent = `${dateLabel} – ${subLabel || mainLabel}${slotTypeLabel ? " – " + slotTypeLabel : ""}`;
+  }
+  
+  if (daySlots.length === 0) {
+    const p = document.createElement("p");
+    p.textContent = "Aucun créneau HIS pour ce jour.";
+    container.appendChild(p);
+  } else {
+    daySlots.forEach(slot => {
+      const regs = state.registrations.filter(r => r.slot_id === slot.id);
+      const card = document.createElement("div");
+      card.className = "pk-slot-card";
+
+      const header = document.createElement("div");
+      header.className = "pk-slot-header";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "pk-slot-title";
+      const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
+      const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
+      titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${slot.label || slot.slot_type}`;
+
+      const badge = document.createElement("span");
+      badge.className = "pk-slot-badge";
+      const count = regs.length;
+      const max = slot.max_places;
+      badge.textContent = `${count}/${max}`;
+      if (count >= max) {
+        badge.classList.add("pk-slot-badge--full");
+      } else if (count === max - 1) {
+        badge.classList.add("pk-slot-badge--warn");
+      } else {
+        badge.classList.add("pk-slot-badge--ok");
+      }
+
+      header.appendChild(titleEl);
+      header.appendChild(badge);
+      card.appendChild(header);
+
+      const participants = document.createElement("div");
+      participants.className = "pk-slot-participants";
+      if (regs.length === 0) {
+        participants.textContent = "Aucun inscrit pour le moment.";
+      } else {
+        const names = regs
+          .map(r => getColleagueName(r.colleague_id))
+          .join(", ");
+        participants.textContent = "Inscrits : " + names;
+      }
+      card.appendChild(participants);
+
+      const actions = document.createElement("div");
+      actions.className = "pk-slot-actions";
+
+      if (!state.selectedColleagueId) {
+        const info = document.createElement("span");
+        info.style.fontSize = "0.75rem";
+        info.style.color = "var(--text-muted)";
+        info.textContent = "Sélectionne ton nom en haut pour t'inscrire.";
+        actions.appendChild(info);
+      } else {
+        const already = regs.some(
+          r => r.colleague_id === state.selectedColleagueId
+        );
+
+        if (!already && count < max) {
+          const btnIn = document.createElement("button");
+          btnIn.className = "pk-btn";
+          btnIn.textContent = "M'inscrire";
+          btnIn.addEventListener("click", async () => {
+            try {
+              await registerToSlot(slot.id, state.selectedColleagueId);
+              await refreshData();
+              renderCalendar();
+              openDayModal(dateStr);
+            } catch (error) {
+              alert("Erreur lors de l'inscription. Vérifiez la console pour plus de détails.");
+              console.error("❌ Erreur:", error);
+            }
+          });
+          actions.appendChild(btnIn);
+        }
+
+        if (already) {
+          const btnOut = document.createElement("button");
+          btnOut.className = "pk-btn pk-btn-ghost";
+          btnOut.textContent = "Me retirer";
+          btnOut.addEventListener("click", async () => {
+            try {
+              await unregisterFromSlot(slot.id, state.selectedColleagueId);
+              await refreshData();
+              renderCalendar();
+              openDayModal(dateStr);
+            } catch (error) {
+              alert("Erreur lors de la désinscription. Vérifiez la console pour plus de détails.");
+              console.error("❌ Erreur:", error);
+            }
+          });
+          actions.appendChild(btnOut);
+        }
+      }
+
+      card.appendChild(actions);
+      container.appendChild(card);
+    });
+  }
+
+  modal.classList.remove("pk-modal-hidden");
+}
+
+function closeDayModal() {
+  const modal = document.getElementById("dayModal");
+  if (modal) {
+    modal.classList.add("pk-modal-hidden");
+    delete modal.dataset.date;
+  }
+}
+
+// --- Utilitaires ---
+
+function getColleagueName(id) {
+  const c = COLLEAGUES.find(c => c.id === id);
+  return c ? c.name : id;
+}
+
+function getMainAttachmentLabel(id) {
+  if (id === "all") return "Tous les sites";
+  const main = getMainAttachments().find(m => m.id === id);
+  return main ? main.label : id;
+}
+
+function getSubAttachmentLabel(id) {
+  if (id === "all") return "";
+  const sub = ATTACHMENT_HIERARCHY.find(item => item.subId === id);
+  return sub ? sub.subLabel : id;
+}
