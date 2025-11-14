@@ -642,6 +642,21 @@
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid rgba(0, 229, 255, 0.2);
+    flex-direction: row-reverse;
+  }
+  
+  @media (max-width: 480px) {
+    .pk-modal-footer {
+      flex-direction: column;
+    }
+    
+    .pk-modal-footer .pk-btn:first-child {
+      order: 1;
+    }
+    
+    .pk-modal-footer .pk-btn:last-child {
+      order: 2;
+    }
   }
   
   .pk-btn-full {
@@ -898,6 +913,16 @@
       width: 100%;
       min-height: 50px;
       font-size: 1rem;
+      order: 0; /* Réinitialiser l'ordre */
+    }
+    
+    /* Bouton "Ajouter" en premier sur mobile */
+    .pk-modal-add-slot .pk-modal-footer #saveSlot {
+      order: 1;
+    }
+    
+    .pk-modal-add-slot .pk-modal-footer #cancelAddSlot {
+      order: 2;
     }
     
     .pk-modal-add-slot .pk-form-group {
