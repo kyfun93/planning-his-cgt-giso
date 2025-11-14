@@ -593,16 +593,21 @@
   
   .pk-modal-form {
     padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
   
   .pk-form-group {
     margin-bottom: 1.25rem;
     position: relative;
+    display: flex;
+    flex-direction: column;
   }
   
   .pk-form-label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.6rem;
     font-size: 0.95rem;
     color: var(--text-muted);
     font-weight: 500;
@@ -613,6 +618,14 @@
     min-height: 44px;
     padding: 0.6rem 0.8rem;
     font-size: 1rem;
+    box-sizing: border-box;
+  }
+  
+  .pk-modal-add-slot {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100vh;
   }
   
   .pk-modal-footer {
@@ -800,70 +813,98 @@
     
     .pk-modal {
       padding: 0;
-      align-items: flex-end;
+      align-items: stretch;
+      background: rgba(0, 0, 0, 0.8);
     }
     
-    .pk-modal-content {
+    .pk-modal-add-slot {
       width: 100%;
       max-width: 100%;
-      border-radius: var(--radius) var(--radius) 0 0;
-      padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom));
-      max-height: 90vh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior-y: contain;
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      padding: 0;
       margin: 0;
+      display: flex;
+      flex-direction: column;
       transform: translate3d(0, 0, 0);
       -webkit-transform: translate3d(0, 0, 0);
     }
     
-    .pk-modal-header {
-      position: sticky;
-      top: 0;
+    .pk-modal-add-slot .pk-modal-header {
+      position: relative;
+      top: auto;
       background: var(--bg-panel);
-      z-index: 1;
-      padding-bottom: 0.8rem;
-      margin-bottom: 0.8rem;
+      z-index: 10;
+      padding: 1rem 1rem 0.8rem;
+      margin: 0;
       border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+      flex-shrink: 0;
     }
     
-    .pk-modal-header .pk-btn {
+    .pk-modal-add-slot .pk-modal-header .pk-btn {
       min-width: 44px;
       min-height: 44px;
       padding: 0.5rem;
       font-size: 1.2rem;
     }
     
-    .pk-modal-footer {
-      position: sticky;
-      bottom: 0;
-      background: var(--bg-panel);
-      margin-top: 1rem;
-      padding-top: 1rem;
-      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
-      flex-direction: column;
-      gap: 0.6rem;
+    .pk-modal-add-slot .pk-modal-form {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 1rem;
+      padding-bottom: 0;
     }
     
-    .pk-modal-footer .pk-btn {
+    .pk-modal-add-slot .pk-modal-footer {
+      position: relative;
+      bottom: auto;
+      background: var(--bg-panel);
+      margin: 0;
+      padding: 1rem;
+      padding-top: 1rem;
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      flex-direction: column;
+      gap: 0.6rem;
+      flex-shrink: 0;
+      border-top: 1px solid rgba(0, 229, 255, 0.2);
+    }
+    
+    .pk-modal-add-slot .pk-modal-footer .pk-btn {
       width: 100%;
       min-height: 50px;
       font-size: 1rem;
     }
     
-    .pk-form-group {
+    .pk-modal-add-slot .pk-form-group {
       margin-bottom: 1.5rem;
     }
     
-    .pk-form-label {
+    .pk-modal-add-slot .pk-form-label {
       font-size: 1rem;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.7rem;
+      font-weight: 600;
     }
     
-    .pk-form-input {
-      min-height: 48px;
-      font-size: 1rem;
-      padding: 0.7rem 1rem;
+    .pk-modal-add-slot .pk-form-input {
+      min-height: 52px;
+      font-size: 1.1rem;
+      padding: 0.8rem 1rem;
+      border-width: 2px;
+    }
+    
+    /* Masquer le mini-calendrier sur mobile */
+    .pk-modal-add-slot #miniCalendar {
+      display: none !important;
+    }
+    
+    /* Améliorer les select sur mobile */
+    .pk-modal-add-slot .pk-select {
+      font-size: 1.1rem;
+      padding: 0.8rem 1rem;
+      min-height: 52px;
     }
     
     .pk-btn {

@@ -915,20 +915,39 @@ function initAddSlotModal() {
 
   // Afficher/masquer le mini calendrier au clic sur le champ date
   if (newSlotDate && miniCalendar) {
-    newSlotDate.addEventListener("focus", (e) => {
-      // Sur mobile, ne pas empêcher le comportement par défaut pour permettre le sélecteur natif
-      const isMobile = window.innerWidth <= 480;
-      if (!isMobile) {
-        e.preventDefault();
-        miniCalendarYear = new Date().getFullYear();
-        miniCalendarMonth = new Date().getMonth();
-        renderMiniCalendar();
-        miniCalendar.classList.remove("pk-mini-calendar-hidden");
+    // Détecter si on est sur mobile
+    const isMobile = () => window.innerWidth <= 480;
+    
+    // Sur mobile, toujours masquer le mini-calendrier et utiliser le sélecteur natif
+    const checkMobile = () => {
+      if (isMobile()) {
+        miniCalendar.classList.add("pk-mini-calendar-hidden");
       }
+    };
+    
+    // Vérifier au chargement et au redimensionnement
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    
+    newSlotDate.addEventListener("focus", (e) => {
+      // Sur mobile, utiliser le sélecteur natif (ne pas afficher le mini-calendrier)
+      if (isMobile()) {
+        // Laisser le comportement natif du champ date sur mobile
+        return;
+      }
+      
+      // Sur desktop, afficher le mini-calendrier
+      e.preventDefault();
+      miniCalendarYear = new Date().getFullYear();
+      miniCalendarMonth = new Date().getMonth();
+      renderMiniCalendar();
+      miniCalendar.classList.remove("pk-mini-calendar-hidden");
     });
     
     // Fermer le calendrier si on clique ailleurs ou sur un autre champ
     document.addEventListener("click", (e) => {
+      if (isMobile()) return; // Sur mobile, ne rien faire
+      
       const isClickOnOtherField = e.target.id === "newSlotMainId" || 
                                    e.target.id === "newSlotSubId" || 
                                    e.target.id === "newSlotType" || 
@@ -941,12 +960,13 @@ function initAddSlotModal() {
       // Fermer le calendrier si on clique sur un autre champ du formulaire
       if (isClickOnOtherField) {
         miniCalendar.classList.add("pk-mini-calendar-hidden");
-        newSlotDate.blur();
       }
     });
     
     // Fermer le calendrier quand on change de champ (focus sur autre élément)
     document.addEventListener("focusin", (e) => {
+      if (isMobile()) return; // Sur mobile, ne rien faire
+      
       if (e.target !== newSlotDate && !miniCalendar.contains(e.target)) {
         miniCalendar.classList.add("pk-mini-calendar-hidden");
       }
