@@ -448,8 +448,7 @@ function initSteps() {
   if (!dropdownMenu) return;
 
   dropdownMenu.innerHTML = "";
-  // Rendre le menu toujours visible (pas de classe pk-dropdown-hidden)
-  dropdownMenu.classList.remove("pk-dropdown-hidden");
+  // Le menu reste caché par défaut
 
   // Créer le menu hiérarchique
   getMainAttachments().forEach(main => {
@@ -667,18 +666,7 @@ function initColleagueSelect() {
     const year = state.currentYear;
     const month = state.currentMonth;
   
-    const firstDay = new Date(year, month, 1);
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
-    // on veut commencer par lundi
-    const startOffset = (firstDay.getDay() + 6) % 7;
-  
-    // cases vides avant le 1er
-    for (let i = 0; i < startOffset; i++) {
-      const empty = document.createElement("div");
-      empty.className = "pk-day pk-day--empty";
-      cal.appendChild(empty);
-    }
   
     const today = new Date();
     const todayY = today.getFullYear();
