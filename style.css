@@ -472,6 +472,22 @@
     -webkit-transform: translateZ(0);
   }
   
+  @media (max-width: 480px) {
+    .pk-mini-calendar {
+      max-width: 100%;
+      left: 0;
+      right: 0;
+      position: fixed;
+      top: auto;
+      bottom: 0;
+      margin-top: 0;
+      border-radius: var(--radius) var(--radius) 0 0;
+      max-height: 50vh;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+  
   .pk-mini-calendar-hidden {
     display: none;
   }

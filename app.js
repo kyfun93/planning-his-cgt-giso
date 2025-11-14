@@ -905,6 +905,10 @@ function initAddSlotModal() {
         newSlotDate.value = selectedDate;
         miniCalendar.classList.add("pk-mini-calendar-hidden");
         console.log("📅 Date sélectionnée:", selectedDate);
+        
+        // Sur mobile, fermer immédiatement et permettre l'accès aux autres champs
+        // Enlever le focus du champ date pour permettre de cliquer sur les autres champs
+        newSlotDate.blur();
       });
     });
   }
@@ -912,16 +916,38 @@ function initAddSlotModal() {
   // Afficher/masquer le mini calendrier au clic sur le champ date
   if (newSlotDate && miniCalendar) {
     newSlotDate.addEventListener("focus", (e) => {
-      e.preventDefault();
-      miniCalendarYear = new Date().getFullYear();
-      miniCalendarMonth = new Date().getMonth();
-      renderMiniCalendar();
-      miniCalendar.classList.remove("pk-mini-calendar-hidden");
+      // Sur mobile, ne pas empêcher le comportement par défaut pour permettre le sélecteur natif
+      const isMobile = window.innerWidth <= 480;
+      if (!isMobile) {
+        e.preventDefault();
+        miniCalendarYear = new Date().getFullYear();
+        miniCalendarMonth = new Date().getMonth();
+        renderMiniCalendar();
+        miniCalendar.classList.remove("pk-mini-calendar-hidden");
+      }
     });
     
-    // Fermer le calendrier si on clique ailleurs
+    // Fermer le calendrier si on clique ailleurs ou sur un autre champ
     document.addEventListener("click", (e) => {
+      const isClickOnOtherField = e.target.id === "newSlotMainId" || 
+                                   e.target.id === "newSlotSubId" || 
+                                   e.target.id === "newSlotType" || 
+                                   e.target.id === "newSlotMaxPlaces";
+      
       if (!miniCalendar.contains(e.target) && e.target !== newSlotDate) {
+        miniCalendar.classList.add("pk-mini-calendar-hidden");
+      }
+      
+      // Fermer le calendrier si on clique sur un autre champ du formulaire
+      if (isClickOnOtherField) {
+        miniCalendar.classList.add("pk-mini-calendar-hidden");
+        newSlotDate.blur();
+      }
+    });
+    
+    // Fermer le calendrier quand on change de champ (focus sur autre élément)
+    document.addEventListener("focusin", (e) => {
+      if (e.target !== newSlotDate && !miniCalendar.contains(e.target)) {
         miniCalendar.classList.add("pk-mini-calendar-hidden");
       }
     });
