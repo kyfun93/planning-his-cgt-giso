@@ -322,6 +322,19 @@
     margin-top: auto;
     font-size: 0.7rem;
     color: var(--text-muted);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  
+  .pk-day-slots-summary strong {
+    display: block;
+    margin-bottom: 0.2rem;
+  }
+  
+  .pk-day-slots-summary br {
+    display: block;
+    content: "";
+    margin: 0.15rem 0;
   }
   
   .pk-day--past {
@@ -703,21 +716,70 @@
   }
   
   @media (max-width: 480px) {
+    .pk-header {
+      padding: 0.5rem 0.6rem;
+    }
+    
     .pk-header-title h1 {
-      font-size: 1.1rem;
+      font-size: 1rem;
+      margin: 0;
     }
     
     .pk-header-title p {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
+      margin: 0.2rem 0 0;
+    }
+    
+    .pk-main {
+      padding: 0.4rem;
+    }
+    
+    .pk-panel {
+      margin: 0;
+    }
+    
+    .pk-panel > *:not(.pk-panel-title) {
+      padding: 0.5rem;
+    }
+    
+    .pk-panel-header {
+      margin-bottom: 0.6rem;
+      padding: 0;
+    }
+    
+    .pk-panel-title {
+      font-size: 0.85rem;
+      margin: 0 0 0.5rem;
     }
     
     .pk-calendar {
       grid-template-columns: repeat(1, minmax(0, 1fr));
-      gap: 0.5rem;
+      gap: 0.4rem;
+      margin-top: 0;
     }
     
     .pk-day {
-      min-height: 100px;
+      min-height: auto;
+      padding: 0.5rem;
+      gap: 0.4rem;
+    }
+    
+    .pk-day-number {
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+    }
+    
+    .pk-day-slots-summary {
+      font-size: 0.75rem;
+      line-height: 1.5;
+      margin-top: 0.3rem;
+    }
+    
+    .pk-day-slots-summary strong {
+      display: block;
+      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
     }
     
     .pk-modal {
