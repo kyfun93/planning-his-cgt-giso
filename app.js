@@ -976,6 +976,7 @@ function initAddSlotModal() {
   // Ouvrir la modale depuis le bouton principal
   addSlotBtn.addEventListener("click", () => {
     addSlotModal.classList.remove("pk-modal-hidden");
+    document.body.classList.add("pk-modal-open");
     document.getElementById("newSlotDate").value = "";
     newSlotMainId.value = "";
     newSlotSubId.innerHTML = "";
@@ -993,6 +994,7 @@ function initAddSlotModal() {
       const dateStr = dayModal ? dayModal.dataset.date : "";
       
       addSlotModal.classList.remove("pk-modal-hidden");
+      document.body.classList.add("pk-modal-open");
       document.getElementById("newSlotDate").value = dateStr || "";
       newSlotMainId.value = "";
       newSlotSubId.innerHTML = "";
@@ -1003,10 +1005,11 @@ function initAddSlotModal() {
       closeDayModal();
     });
   }
-
+  
   // Fermer la modale
   const closeModal = () => {
     addSlotModal.classList.add("pk-modal-hidden");
+    document.body.classList.remove("pk-modal-open");
     // Réinitialiser le formulaire
     document.getElementById("newSlotDate").value = "";
     newSlotMainId.value = "";

@@ -351,14 +351,15 @@
   .pk-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(0, 0, 0, 0.75);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 1rem;
     will-change: opacity;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 10000;
   }
   
   .pk-modal-hidden {
@@ -376,6 +377,12 @@
     will-change: transform, opacity;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
+    position: relative;
+    z-index: 10001;
+  }
+  
+  .pk-modal-add-slot {
+    z-index: 10001;
   }
   
   .pk-modal-header {
@@ -814,7 +821,8 @@
     .pk-modal {
       padding: 0;
       align-items: stretch;
-      background: rgba(0, 0, 0, 0.8);
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 10000;
     }
     
     .pk-modal-add-slot {
@@ -829,6 +837,20 @@
       flex-direction: column;
       transform: translate3d(0, 0, 0);
       -webkit-transform: translate3d(0, 0, 0);
+      position: relative;
+      z-index: 10001;
+    }
+    
+    /* Masquer le header quand le formulaire est ouvert sur mobile */
+    body.pk-modal-open .pk-header {
+      z-index: 1;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+    
+    body.pk-modal-open .pk-main {
+      opacity: 0.2;
+      pointer-events: none;
     }
     
     .pk-modal-add-slot .pk-modal-header {
