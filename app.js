@@ -70,17 +70,17 @@ const COLLEAGUES = [
 // Structure hiérarchique des attachements
 // Format: { mainId, mainLabel, subId, subLabel, slotType }
 const ATTACHMENT_HIERARCHY = [
-  // A. TDE
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_massy", subLabel: "Massy", slotType: "Jour" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_massy", subLabel: "Massy", slotType: "Nuit" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Jour" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Nuit" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_nogent", subLabel: "Nogent", slotType: "Jour" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_nogent", subLabel: "Nogent", slotType: "Nuit" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_republique", subLabel: "République", slotType: "Jour" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_evs", subLabel: "EVS", slotType: "Nuit" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_villette", subLabel: "Villette", slotType: "Jour" },
-  { mainId: "voie", mainLabel: "TDE", subId: "voie_villette", subLabel: "Villette", slotType: "Nuit" },
+  // A. VOIE
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_massy", subLabel: "Massy", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_massy", subLabel: "Massy", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nanterre", subLabel: "Nanterre", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nogent", subLabel: "Nogent", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_nogent", subLabel: "Nogent", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_republique", subLabel: "République", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_evs", subLabel: "EVS", slotType: "Nuit" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_villette", subLabel: "Villette", slotType: "Jour" },
+  { mainId: "voie", mainLabel: "VOIE", subId: "voie_villette", subLabel: "Villette", slotType: "Nuit" },
   
   // B. MCBT
   { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe nuit" },
