@@ -840,6 +840,7 @@ async function loadInactiveCombinationsLast2Months() {
       console.warn("⚠️ Détection 'jamais planifié' ignorée:", e);
     }
     
+    console.log(`📊 Inactifs (2 mois) – total: ${inactive.length}`);
     return inactive;
   } catch (e) {
     console.error("❌ Exception inactifs:", e);
@@ -884,6 +885,7 @@ async function openInactiveSlotsModal() {
   
   container.innerHTML = "";
   let list = await loadInactiveCombinationsLast2Months();
+  console.log("🪟 Ouverture modale inactifs. Combinaisons à afficher:", list ? list.length : 0);
   
   if (!list || list.length === 0) {
     const p = document.createElement("p");
@@ -908,6 +910,9 @@ async function openInactiveSlotsModal() {
       createBtn.className = "pk-btn";
       createBtn.textContent = "Créer un créneau";
       createBtn.addEventListener("click", () => {
+        console.log("🧩 Pré-remplissage création depuis inactifs:", {
+          mainId: entry.mainId, subId: entry.subId, slotType: entry.slotType
+        });
         openAddSlotPrefilled(entry.mainId, entry.subId, entry.slotType);
       });
       actions.appendChild(createBtn);
@@ -937,6 +942,7 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   const miniCalendar = document.getElementById("miniCalendar");
   if (!addSlotModal || !newSlotDate || !newSlotMainId || !newSlotSubId || !newSlotType || !maxPlacesEl) return;
   
+  console.log("🪟 Ouverture formulaire 'Ajouter' pré-rempli (avant sélection):", { mainId, subId, slotType });
   // Réinitialiser / Pré-remplir
   newSlotDate.value = "";
   maxPlacesEl.value = "3";
@@ -964,6 +970,11 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
       newSlotType.selectedIndex = 0;
     }
   }
+  console.log("✅ Pré-rempli (après sélection):", {
+    mainId: newSlotMainId.value,
+    subId: newSlotSubId.value,
+    slotType: newSlotType.value
+  });
   
   // Afficher la modale d'ajout
   addSlotModal.classList.remove("pk-modal-hidden");
