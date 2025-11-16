@@ -1026,3 +1026,17 @@
     }
   }
   
+  /* Indicateur d'activité des types de créneau */
+  .pk-slottype-indicator {
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .pk-slottype-indicator--warn {
+    color: #ff4d4f;
+  }
+  
+  .pk-slottype-indicator--ok {
+    color: var(--text-muted);
+  }
+  

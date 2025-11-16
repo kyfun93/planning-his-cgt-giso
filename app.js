@@ -411,6 +411,76 @@ function formatDate(year, monthIndex, day) {
   const d = String(day).padStart(2, "0");
   return `${year}-${m}-${d}`;
 }
+ 
+// Vérifier l'activité récente (J-60 à aujourd'hui) pour une combinaison mainId + subId + slotType
+// Retourne un objet { hasActivity: boolean, count: number }
+async function checkRecentActivity(mainId, subId, slotType) {
+  // Si des paramètres sont manquants ou "all", ne pas signaler d'erreur et retourner neutre
+  if (!mainId || !subId || !slotType || mainId === "all" || subId === "all" || slotType === "all") {
+    return { hasActivity: true, count: 0 };
+  }
+  if (!supabase) {
+    console.warn("⚠️ Supabase non configuré pour checkRecentActivity");
+    return { hasActivity: false, count: 0 };
+  }
+  try {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - 60);
+    const startStr = formatDateForDB(start);
+    const endStr = formatDateForDB(today);
+    
+    // Utiliser le comptage exact, sans rapatrier toutes les lignes
+    const { count, error } = await supabase
+      .from("his_slots")
+      .select("id", { count: "exact", head: true })
+      .gte("date", startStr)
+      .lte("date", endStr)
+      .eq("main_id", mainId)
+      .eq("sub_id", subId)
+      .eq("slot_type", slotType);
+    
+    if (error) {
+      console.error("❌ Erreur checkRecentActivity:", error);
+      return { hasActivity: false, count: 0 };
+    }
+    const num = typeof count === "number" ? count : 0;
+    return { hasActivity: num > 0, count: num };
+  } catch (e) {
+    console.error("❌ Exception checkRecentActivity:", e);
+    return { hasActivity: false, count: 0 };
+  }
+}
+ 
+// Met à jour l'indicateur visuel sous les onglets/type sélectionné
+async function updateSlotTypeActivityIndicator() {
+  const indicator = document.getElementById("slotTypeActivityIndicator");
+  if (!indicator) return;
+  
+  // Nettoyer classes
+  indicator.classList.remove("pk-slottype-indicator--warn", "pk-slottype-indicator--ok");
+  indicator.textContent = "";
+  
+  const mainId = state.selectedMainId;
+  const subId = state.selectedSubId;
+  const slotType = state.selectedSlotType;
+  
+  // Si sélection globale ou incomplète, rester neutre
+  if (!mainId || !subId || !slotType || mainId === "all" || subId === "all" || slotType === "all") {
+    indicator.classList.add("pk-slottype-indicator--ok");
+    indicator.textContent = "Sélectionne une unité, un site et un type pour voir l'activité récente.";
+    return;
+  }
+  
+  const { hasActivity } = await checkRecentActivity(mainId, subId, slotType);
+  if (!hasActivity) {
+    indicator.classList.add("pk-slottype-indicator--warn");
+    indicator.textContent = "⚠ Aucun créneau HIS sur les 2 derniers mois pour cette combinaison";
+  } else {
+    indicator.classList.add("pk-slottype-indicator--ok");
+    indicator.textContent = "✓ Au moins un créneau HIS sur les 2 derniers mois";
+  }
+}
   
   // --- Initialisation ---
   
@@ -433,6 +503,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   
     renderCalendar();
+      // Mettre à jour l'indicateur d'activité au chargement
+      updateSlotTypeActivityIndicator();
   console.log("✅ Initialisation terminée");
 });
 
@@ -516,6 +588,8 @@ function initSteps() {
           // Recharger les données et afficher le calendrier
           await refreshData();
       renderCalendar();
+          // Mettre à jour l'indicateur d'activité
+          updateSlotTypeActivityIndicator();
     });
   
         slotItem.appendChild(slotLink);
