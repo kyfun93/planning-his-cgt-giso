@@ -1039,8 +1039,8 @@
   .pk-inactive-slots-item {
     padding: 0.5rem 0.75rem;
     border-radius: 0.5rem;
-    background: var(--bg-panel-alt);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 77, 79, 0.08);
+    border: 1px solid rgba(255, 77, 79, 0.4);
   }
   
   .pk-inactive-ok {

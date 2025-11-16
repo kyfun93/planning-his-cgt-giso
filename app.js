@@ -795,6 +795,10 @@ async function loadInactiveCombinationsLast2Months() {
     return [];
   }
   try {
+    // Baseline remise à aujourd'hui : on considère qu'aucune combinaison n'est en retard
+    console.log("⏱️ Baseline activité réinitialisée à aujourd'hui: aucune combinaison inactive retournée.");
+    return [];
+    
     const today = new Date();
     const threshold = new Date(today);
     threshold.setDate(threshold.getDate() - 60);
