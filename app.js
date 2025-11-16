@@ -129,7 +129,10 @@ const ATTACHMENT_HIERARCHY = [
   { mainId: "eso", mainLabel: "ESO", subId: "eso_cpmo", subLabel: "CPMO", slotType: "Jour VDF" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_cpmo", subLabel: "CPMO", slotType: "Nuit Chanzy" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_barbes", subLabel: "Barbès", slotType: "Nuit" },
-  { mainId: "eso", mainLabel: "ESO", subId: "eso_chanzy", subLabel: "Chanzy", slotType: "Nuit" }
+  { mainId: "eso", mainLabel: "ESO", subId: "eso_chanzy", subLabel: "Chanzy", slotType: "Nuit" },
+  
+  // F. LEM
+  { mainId: "lem", mainLabel: "LEM", subId: "lem_boissy", subLabel: "Boissy", slotType: "Jour" }
 ];
 
 // Fonction pour obtenir les attachements principaux uniques
