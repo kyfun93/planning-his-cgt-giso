@@ -22,6 +22,7 @@
           <!-- rempli par JS -->
         </div>
       </div>
+      <button id="showInactiveSlotsBtn" class="pk-btn pk-btn-ghost">Créneaux non planifiés (2 mois)</button>
 
       <select id="colleagueSelect" class="pk-select">
         <!-- rempli par JS -->
@@ -46,6 +47,19 @@
       </div>
     </section>
   </main>
+
+  <!-- Modale combinaisons inactives -->
+  <div id="inactiveSlotsModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content">
+      <div class="pk-modal-header">
+        <h2>Combinaisons sans HIS sur les 2 derniers mois</h2>
+        <button id="closeInactiveSlotsModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="inactiveSlotsContainer" class="pk-inactive-slots-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modale détail d'un jour -->
   <div id="dayModal" class="pk-modal pk-modal-hidden">

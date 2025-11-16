@@ -427,6 +427,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initMonthNav();
     initModal();
   initAddSlotModal();
+  initInactiveSlotsModal();
   
   // Charger les données depuis Supabase
   await refreshData();
@@ -785,6 +786,130 @@ function initColleagueSelect() {
     });
   }
 
+// === Inactifs 2 mois ===
+
+// Charge les combinaisons (main_id, sub_id, slot_type) dont le dernier HIS < J-60
+async function loadInactiveCombinationsLast2Months() {
+  if (!supabase) {
+    console.warn("⚠️ Supabase non configuré pour loadInactiveCombinationsLast2Months");
+    return [];
+  }
+  try {
+    const today = new Date();
+    const threshold = new Date(today);
+    threshold.setDate(threshold.getDate() - 60);
+    const thresholdStr = formatDateForDB(threshold);
+    
+    // Agrégat: dernière date par combinaison
+    const { data, error } = await supabase
+      .from("his_slots")
+      .select("main_id, sub_id, slot_type, last_date:max(date)")
+      .group("main_id, sub_id, slot_type");
+    
+    if (error) {
+      console.error("❌ Erreur agrégat inactifs:", error);
+      return [];
+    }
+    
+    const inactive = (data || []).filter(row => {
+      const last = new Date(row.last_date);
+      // Inactif si last < threshold
+      return isFinite(last.getTime()) && last < threshold;
+    }).map(row => ({
+      mainId: row.main_id,
+      subId: row.sub_id,
+      slotType: row.slot_type,
+      lastDate: row.last_date
+    }));
+    
+    // Optionnel: détecter les combinaisons jamais planifiées à partir de la config
+    try {
+      const existingKeySet = new Set((data || []).map(r => `${r.main_id}||${r.sub_id}||${r.slot_type}`));
+      ATTACHMENT_HIERARCHY.forEach(item => {
+        const key = `${item.mainId}||${item.subId}||${item.slotType}`;
+        if (!existingKeySet.has(key)) {
+          inactive.push({
+            mainId: item.mainId,
+            subId: item.subId,
+            slotType: item.slotType,
+            lastDate: null // jamais planifié
+          });
+        }
+      });
+    } catch (e) {
+      console.warn("⚠️ Détection 'jamais planifié' ignorée:", e);
+    }
+    
+    return inactive;
+  } catch (e) {
+    console.error("❌ Exception inactifs:", e);
+    return [];
+  }
+}
+
+function formatDateFr(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (!isFinite(d.getTime())) return dateStr;
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = monthNames[d.getMonth()];
+  const yyyy = d.getFullYear();
+  return `${dd} ${mm} ${yyyy}`;
+}
+
+function formatMainSubSlot(mainId, subId, slotType) {
+  const main = getMainAttachmentLabel(mainId);
+  const sub = getSubAttachmentLabel(subId);
+  const type = slotType || "";
+  return `${main}${sub ? " / " + sub : ""} – ${type}`;
+}
+
+function initInactiveSlotsModal() {
+  const btn = document.getElementById("showInactiveSlotsBtn");
+  const modal = document.getElementById("inactiveSlotsModal");
+  const closeBtn = document.getElementById("closeInactiveSlotsModal");
+  if (!btn || !modal || !closeBtn) return;
+  
+  btn.addEventListener("click", openInactiveSlotsModal);
+  closeBtn.addEventListener("click", closeInactiveSlotsModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeInactiveSlotsModal();
+  });
+}
+
+async function openInactiveSlotsModal() {
+  const modal = document.getElementById("inactiveSlotsModal");
+  const container = document.getElementById("inactiveSlotsContainer");
+  if (!modal || !container) return;
+  
+  container.innerHTML = "";
+  let list = await loadInactiveCombinationsLast2Months();
+  
+  if (!list || list.length === 0) {
+    const p = document.createElement("p");
+    p.className = "pk-inactive-ok";
+    p.textContent = "✅ Toutes les combinaisons ont au moins un HIS sur les 2 derniers mois.";
+    container.appendChild(p);
+  } else {
+    list.forEach(entry => {
+      const div = document.createElement("div");
+      div.className = "pk-inactive-slots-item";
+      if (entry.lastDate) {
+        div.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (dernier HIS le ${formatDateFr(entry.lastDate)})`;
+      } else {
+        div.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (aucun HIS jamais planifié)`;
+      }
+      container.appendChild(div);
+    });
+  }
+  
+  modal.classList.remove("pk-modal-hidden");
+}
+
+function closeInactiveSlotsModal() {
+  const modal = document.getElementById("inactiveSlotsModal");
+  if (modal) modal.classList.add("pk-modal-hidden");
+}
 // --- Modale ajouter un créneau ---
 
 function initAddSlotModal() {

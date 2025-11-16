@@ -1026,3 +1026,25 @@
     }
   }
   
+  /* Liste des combinaisons inactives (2 mois) */
+  .pk-inactive-slots-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    font-size: 0.85rem;
+  }
+  
+  .pk-inactive-slots-item {
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: rgba(255, 77, 79, 0.08);
+    border: 1px solid rgba(255, 77, 79, 0.4);
+  }
+  
+  .pk-inactive-ok {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  
