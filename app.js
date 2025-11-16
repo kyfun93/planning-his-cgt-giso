@@ -800,31 +800,39 @@ async function loadInactiveCombinationsLast2Months() {
     threshold.setDate(threshold.getDate() - 60);
     const thresholdStr = formatDateForDB(threshold);
     
-    // Agrégat: dernière date par combinaison
+    // Récupérer toutes les dates, triées décroissant, puis réduire côté JS
     const { data, error } = await supabase
       .from("his_slots")
-      .select("main_id, sub_id, slot_type, last_date:max(date)")
-      .group("main_id, sub_id, slot_type");
+      .select("main_id, sub_id, slot_type, date")
+      .order("date", { ascending: false });
     
     if (error) {
       console.error("❌ Erreur agrégat inactifs:", error);
       return [];
     }
-    
-    const inactive = (data || []).filter(row => {
-      const last = new Date(row.last_date);
-      // Inactif si last < threshold
-      return isFinite(last.getTime()) && last < threshold;
-    }).map(row => ({
-      mainId: row.main_id,
-      subId: row.sub_id,
-      slotType: row.slot_type,
-      lastDate: row.last_date
-    }));
+
+    // Réduire pour obtenir la dernière date par combinaison
+    const lastByCombo = new Map();
+    (data || []).forEach(row => {
+      const key = `${row.main_id}||${row.sub_id}||${row.slot_type}`;
+      if (!lastByCombo.has(key)) {
+        lastByCombo.set(key, row.date);
+      }
+    });
+
+    const inactive = Array.from(lastByCombo.entries())
+      .filter(([, lastDate]) => {
+        const last = new Date(lastDate);
+        return isFinite(last.getTime()) && last < threshold;
+      })
+      .map(([key, lastDate]) => {
+        const [mainId, subId, slotType] = key.split("||");
+        return { mainId, subId, slotType, lastDate };
+      });
     
     // Optionnel: détecter les combinaisons jamais planifiées à partir de la config
     try {
-      const existingKeySet = new Set((data || []).map(r => `${r.main_id}||${r.sub_id}||${r.slot_type}`));
+      const existingKeySet = new Set(Array.from(lastByCombo.keys()));
       ATTACHMENT_HIERARCHY.forEach(item => {
         const key = `${item.mainId}||${item.subId}||${item.slotType}`;
         if (!existingKeySet.has(key)) {
