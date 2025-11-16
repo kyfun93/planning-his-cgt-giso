@@ -892,14 +892,29 @@ async function openInactiveSlotsModal() {
     container.appendChild(p);
   } else {
     list.forEach(entry => {
-      const div = document.createElement("div");
-      div.className = "pk-inactive-slots-item";
+      const item = document.createElement("div");
+      item.className = "pk-inactive-slots-item";
+      
+      const text = document.createElement("div");
+      text.style.marginBottom = "0.4rem";
       if (entry.lastDate) {
-        div.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (dernier HIS le ${formatDateFr(entry.lastDate)})`;
+        text.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (dernier HIS le ${formatDateFr(entry.lastDate)})`;
       } else {
-        div.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (aucun HIS jamais planifié)`;
+        text.textContent = `${formatMainSubSlot(entry.mainId, entry.subId, entry.slotType)} (aucun HIS jamais planifié)`;
       }
-      container.appendChild(div);
+      
+      const actions = document.createElement("div");
+      const createBtn = document.createElement("button");
+      createBtn.className = "pk-btn";
+      createBtn.textContent = "Créer un créneau";
+      createBtn.addEventListener("click", () => {
+        openAddSlotPrefilled(entry.mainId, entry.subId, entry.slotType);
+      });
+      actions.appendChild(createBtn);
+      
+      item.appendChild(text);
+      item.appendChild(actions);
+      container.appendChild(item);
     });
   }
   
@@ -909,6 +924,50 @@ async function openInactiveSlotsModal() {
 function closeInactiveSlotsModal() {
   const modal = document.getElementById("inactiveSlotsModal");
   if (modal) modal.classList.add("pk-modal-hidden");
+}
+
+// Ouvre la modale "Ajouter un créneau" pré-remplie avec mainId/subId/slotType
+function openAddSlotPrefilled(mainId, subId, slotType) {
+  const addSlotModal = document.getElementById("addSlotModal");
+  const newSlotDate = document.getElementById("newSlotDate");
+  const newSlotMainId = document.getElementById("newSlotMainId");
+  const newSlotSubId = document.getElementById("newSlotSubId");
+  const newSlotType = document.getElementById("newSlotType");
+  const maxPlacesEl = document.getElementById("newSlotMaxPlaces");
+  const miniCalendar = document.getElementById("miniCalendar");
+  if (!addSlotModal || !newSlotDate || !newSlotMainId || !newSlotSubId || !newSlotType || !maxPlacesEl) return;
+  
+  // Réinitialiser / Pré-remplir
+  newSlotDate.value = "";
+  maxPlacesEl.value = "3";
+  if (miniCalendar) miniCalendar.classList.add("pk-mini-calendar-hidden");
+  
+  // Sélectionner mainId et déclencher le remplissage des sous-sites
+  newSlotMainId.value = mainId || "";
+  const changeEvent = new Event("change", { bubbles: true });
+  newSlotMainId.dispatchEvent(changeEvent);
+  
+  // Sélectionner subId puis remplir les types
+  if (subId) {
+    newSlotSubId.value = subId;
+    newSlotSubId.dispatchEvent(changeEvent);
+  }
+  
+  // Sélectionner le type si disponible
+  if (slotType) {
+    // Tente une correspondance stricte
+    const found = Array.from(newSlotType.options).some(opt => opt.value === slotType);
+    if (found) {
+      newSlotType.value = slotType;
+    } else if (newSlotType.options.length > 0) {
+      // fallback: première option disponible
+      newSlotType.selectedIndex = 0;
+    }
+  }
+  
+  // Afficher la modale d'ajout
+  addSlotModal.classList.remove("pk-modal-hidden");
+  document.body.classList.add("pk-modal-open");
 }
 // --- Modale ajouter un créneau ---
 
