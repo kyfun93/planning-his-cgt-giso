@@ -48,23 +48,28 @@ const DEMO_YEAR_STR = String(DEMO_YEAR);
 // --- Données ---
 
 const COLLEAGUES = [
-    { id: "david_lecler", name: "David LECLER" },
-    { id: "maxime_de_aguiar", name: "Maxime DE AGUIAR" },
     { id: "pascal_akriche", name: "Pascal AKRICHE" },
-    { id: "jeanrene_morvan", name: "Jean-René MORVAN" },
-    { id: "sebastien_lesgent", name: "Sébastien LESGENT" },
-    { id: "mamadou_diallo", name: "Mamadou DIALLO" },
-    { id: "michael_bureau", name: "Michael BUREAU" },
-    { id: "stephane_tondut", name: "Stéphane TONDUT" },
-    { id: "samir_jablaoui", name: "Samir JABLAOUI" },
-    { id: "jerome_godefroy", name: "Jérôme GODEFROY" },
-    { id: "fabrice_keller", name: "Fabrice KELLER" },
-    { id: "demba_semega", name: "Demba SEMEGA" },
     { id: "tarris_andet", name: "Tarris ANDET" },
-    { id: "lamini_magassa", name: "Lamini MAGASSA" },
+    { id: "andre_bazin", name: "André BAZIN" },
+    { id: "stephane_bonnenfant", name: "Stéphane BONNENFANT" },
+    { id: "yves_boileau", name: "Yves BOILEAU" },
     { id: "benjamin_brouchet", name: "Benjamin BROUCHET" },
-    { id: "wilfried_van_niel", name: "Wilfried VAN NIEL" },
-    { id: "andre_bazin", name: "André BAZIN" }
+    { id: "michael_bureau", name: "Michael BUREAU" },
+    { id: "maxime_de_aguiar", name: "Maxime DE AGUIAR" },
+    { id: "mamadou_diallo", name: "Mamadou DIALLO" },
+    { id: "jerome_godefroy", name: "Jérôme GODEFROY" },
+    { id: "samir_jablaoui", name: "Samir JABLAOUI" },
+    { id: "fabrice_keller", name: "Fabrice KELLER" },
+    { id: "david_lecler", name: "David LECLER" },
+    { id: "valentin_lerendu", name: "Valentin LERENDU" },
+    { id: "sebastien_lesgent", name: "Sébastien LESGENT" },
+    { id: "lamini_magassa", name: "Lamini MAGASSA" },
+    { id: "jeanrene_morvan", name: "Jean-René MORVAN" },
+    { id: "demba_semega", name: "Demba SEMEGA" },
+    { id: "stephane_tondut", name: "Stéphane TONDUT" },
+    { id: "yannick_trebouta", name: "Yannick TREBOUTA" },
+    { id: "eric_turban", name: "Éric TURBAN" },
+    { id: "wilfried_van_niel", name: "Wilfried VAN NIEL" }
   ];
   
 // Structure hiérarchique des attachements
