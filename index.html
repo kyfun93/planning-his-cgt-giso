@@ -48,6 +48,24 @@
     </section>
   </main>
 
+  <!-- Bouton historique en bas de page -->
+  <footer class="pk-footer">
+    <button id="showHistoryBtn" class="pk-btn pk-btn-history">📋 Historique des créneaux</button>
+  </footer>
+
+  <!-- Modale historique des créneaux -->
+  <div id="historyModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content">
+      <div class="pk-modal-header">
+        <h2>Historique des créneaux</h2>
+        <button id="closeHistoryModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="historyContainer" class="pk-history-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- Modale combinaisons inactives -->
   <div id="inactiveSlotsModal" class="pk-modal pk-modal-hidden">
     <div class="pk-modal-content">

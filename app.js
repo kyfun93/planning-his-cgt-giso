@@ -267,6 +267,37 @@ async function loadRegistrations() {
   }
 }
 
+// Charger l'historique des créneaux passés
+async function loadHistorySlots() {
+  if (!supabase) {
+    console.warn("⚠️ Supabase non configuré, utilisation de données vides");
+    return [];
+  }
+
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = formatDateForDB(today);
+
+    const { data, error } = await supabase
+      .from("his_slots")
+      .select("*")
+      .lt("date", todayStr)
+      .order("date", { ascending: false });
+
+    if (error) {
+      console.error("❌ Erreur lors du chargement de l'historique:", error);
+      return [];
+    }
+
+    console.log(`✅ ${data.length} créneau(x) historique(s) chargé(s)`);
+    return data || [];
+  } catch (error) {
+    console.error("❌ Erreur lors du chargement de l'historique:", error);
+    return [];
+  }
+}
+
 // Créer un nouveau slot
 async function createSlot(slotData) {
   if (!supabase) {
@@ -433,6 +464,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initModal();
   initAddSlotModal();
   initInactiveSlotsModal();
+  initHistoryModal();
   
   // Charger les données depuis Supabase
   await refreshData();
@@ -945,6 +977,130 @@ async function openInactiveSlotsModal() {
 
 function closeInactiveSlotsModal() {
   const modal = document.getElementById("inactiveSlotsModal");
+  if (modal) modal.classList.add("pk-modal-hidden");
+}
+
+// === Historique des créneaux ===
+
+function initHistoryModal() {
+  const btn = document.getElementById("showHistoryBtn");
+  const modal = document.getElementById("historyModal");
+  const closeBtn = document.getElementById("closeHistoryModal");
+  if (!btn || !modal || !closeBtn) return;
+  
+  btn.addEventListener("click", openHistoryModal);
+  closeBtn.addEventListener("click", closeHistoryModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeHistoryModal();
+  });
+}
+
+async function openHistoryModal() {
+  const modal = document.getElementById("historyModal");
+  const container = document.getElementById("historyContainer");
+  if (!modal || !container) return;
+  
+  container.innerHTML = "<p style='text-align: center; padding: 2rem;'>Chargement de l'historique...</p>";
+  modal.classList.remove("pk-modal-hidden");
+  
+  try {
+    // Charger les créneaux passés
+    const historySlots = await loadHistorySlots();
+    
+    // Charger toutes les inscriptions pour avoir les participants
+    const allRegistrations = await loadRegistrations();
+    
+    container.innerHTML = "";
+    
+    if (!historySlots || historySlots.length === 0) {
+      const p = document.createElement("p");
+      p.className = "pk-inactive-ok";
+      p.textContent = "Aucun créneau historique trouvé.";
+      container.appendChild(p);
+      return;
+    }
+    
+    // Grouper les créneaux par date
+    const slotsByDate = new Map();
+    historySlots.forEach(slot => {
+      if (!slotsByDate.has(slot.date)) {
+        slotsByDate.set(slot.date, []);
+      }
+      slotsByDate.get(slot.date).push(slot);
+    });
+    
+    // Afficher les créneaux groupés par date (du plus récent au plus ancien)
+    const sortedDates = Array.from(slotsByDate.keys()).sort((a, b) => {
+      return new Date(b) - new Date(a);
+    });
+    
+    sortedDates.forEach(dateStr => {
+      const dateSlots = slotsByDate.get(dateStr);
+      
+      // En-tête de date
+      const dateHeader = document.createElement("div");
+      dateHeader.className = "pk-history-date-header";
+      const [y, m, d] = dateStr.split("-");
+      const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
+      const dateLabel = `${String(d).padStart(2, "0")} ${monthNames[dateObj.getMonth()]} ${y}`;
+      dateHeader.textContent = dateLabel;
+      container.appendChild(dateHeader);
+      
+      // Créneaux de cette date
+      dateSlots.forEach(slot => {
+        const regs = allRegistrations.filter(r => r.slot_id === slot.id);
+        const card = document.createElement("div");
+        card.className = "pk-slot-card pk-history-card";
+        
+        const header = document.createElement("div");
+        header.className = "pk-slot-header";
+        
+        const titleEl = document.createElement("div");
+        titleEl.className = "pk-slot-title";
+        const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
+        const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
+        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${slot.label || slot.slot_type}`;
+        
+        const badge = document.createElement("span");
+        badge.className = "pk-slot-badge";
+        const count = regs.length;
+        const max = slot.max_places;
+        badge.textContent = `${count}/${max}`;
+        if (count >= max) {
+          badge.classList.add("pk-slot-badge--full");
+        } else if (count === max - 1) {
+          badge.classList.add("pk-slot-badge--warn");
+        } else {
+          badge.classList.add("pk-slot-badge--ok");
+        }
+        
+        header.appendChild(titleEl);
+        header.appendChild(badge);
+        card.appendChild(header);
+        
+        const participants = document.createElement("div");
+        participants.className = "pk-slot-participants";
+        if (regs.length === 0) {
+          participants.textContent = "Aucun inscrit.";
+        } else {
+          const names = regs
+            .map(r => getColleagueName(r.colleague_id))
+            .join(", ");
+          participants.textContent = "Inscrits : " + names;
+        }
+        card.appendChild(participants);
+        
+        container.appendChild(card);
+      });
+    });
+  } catch (error) {
+    console.error("❌ Erreur lors du chargement de l'historique:", error);
+    container.innerHTML = "<p style='color: var(--text-danger); padding: 2rem;'>Erreur lors du chargement de l'historique. Vérifiez la console pour plus de détails.</p>";
+  }
+}
+
+function closeHistoryModal() {
+  const modal = document.getElementById("historyModal");
   if (modal) modal.classList.add("pk-modal-hidden");
 }
 
