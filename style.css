@@ -447,6 +447,17 @@
     margin-bottom: 0.4rem;
   }
   
+  .pk-slot-comment {
+    font-size: 0.85rem;
+    color: var(--text-main);
+    margin-top: 0.6rem;
+    padding: 0.6rem;
+    background: rgba(0, 229, 255, 0.1);
+    border-left: 3px solid var(--border-neon);
+    border-radius: var(--radius);
+    line-height: 1.5;
+  }
+  
   .pk-slot-actions {
     display: flex;
     justify-content: flex-end;
@@ -627,6 +638,31 @@
     padding: 0.6rem 0.8rem;
     font-size: 1rem;
     box-sizing: border-box;
+  }
+  
+  .pk-form-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.6rem 0.8rem;
+    font-size: 1rem;
+    box-sizing: border-box;
+    background: var(--bg-panel-alt);
+    color: var(--text-main);
+    border-radius: var(--radius);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    outline: none;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+  
+  .pk-form-textarea:focus {
+    box-shadow: var(--shadow-neon);
+    border-color: var(--border-neon);
+  }
+  
+  .pk-form-textarea::placeholder {
+    color: var(--text-muted);
   }
   
   .pk-modal-add-slot {

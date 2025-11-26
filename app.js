@@ -1090,6 +1090,14 @@ async function openHistoryModal() {
         }
         card.appendChild(participants);
         
+        // Afficher le commentaire s'il existe
+        if (slot.comment) {
+          const commentEl = document.createElement("div");
+          commentEl.className = "pk-slot-comment";
+          commentEl.textContent = `💬 ${slot.comment}`;
+          card.appendChild(commentEl);
+        }
+        
         container.appendChild(card);
       });
     });
@@ -1112,6 +1120,7 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   const newSlotSubId = document.getElementById("newSlotSubId");
   const newSlotType = document.getElementById("newSlotType");
   const maxPlacesEl = document.getElementById("newSlotMaxPlaces");
+  const newSlotComment = document.getElementById("newSlotComment");
   const miniCalendar = document.getElementById("miniCalendar");
   if (!addSlotModal || !newSlotDate || !newSlotMainId || !newSlotSubId || !newSlotType || !maxPlacesEl) return;
   
@@ -1119,6 +1128,7 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   // Réinitialiser / Pré-remplir
   newSlotDate.value = "";
   maxPlacesEl.value = "3";
+  if (newSlotComment) newSlotComment.value = "";
   if (miniCalendar) miniCalendar.classList.add("pk-mini-calendar-hidden");
   
   // Sélectionner mainId et déclencher le remplissage des sous-sites
@@ -1355,6 +1365,7 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
+    document.getElementById("newSlotComment").value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1373,6 +1384,7 @@ function initAddSlotModal() {
       newSlotSubId.innerHTML = "";
       newSlotType.innerHTML = "";
       document.getElementById("newSlotMaxPlaces").value = "3";
+      document.getElementById("newSlotComment").value = "";
       
       // Fermer la modale du jour
       closeDayModal();
@@ -1389,6 +1401,7 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
+    document.getElementById("newSlotComment").value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1407,9 +1420,11 @@ function initAddSlotModal() {
     const subId = newSlotSubId.value;
     const slotType = newSlotType.value;
     const maxPlaces = parseInt(document.getElementById("newSlotMaxPlaces").value);
+    const commentEl = document.getElementById("newSlotComment");
+    const comment = commentEl ? commentEl.value.trim() : "";
 
     if (!date || !mainId || !subId || !slotType || !maxPlaces) {
-      alert("Veuillez remplir tous les champs");
+      alert("Veuillez remplir tous les champs obligatoires");
       return;
     }
 
@@ -1425,8 +1440,25 @@ function initAddSlotModal() {
         label: slotType,
         max_places: maxPlaces
       };
+      
+      // Ajouter le commentaire seulement s'il n'est pas vide
+      if (comment) {
+        newSlot.comment = comment;
+      }
 
-      await createSlot(newSlot);
+      try {
+        await createSlot(newSlot);
+      } catch (commentError) {
+        // Si l'erreur indique que la colonne comment n'existe pas, réessayer sans le commentaire
+        const errorMsg = commentError.message || JSON.stringify(commentError);
+        if (comment && (errorMsg.includes("comment") || errorMsg.includes("column") || errorMsg.includes("does not exist"))) {
+          console.warn("⚠️ Colonne 'comment' non trouvée, création du créneau sans commentaire");
+          delete newSlot.comment;
+          await createSlot(newSlot);
+        } else {
+          throw commentError;
+        }
+      }
 
       // Fermer la modale et rafraîchir
       closeModal();
@@ -1435,8 +1467,15 @@ function initAddSlotModal() {
       
       console.log("✅ Créneau ajouté:", newSlot);
     } catch (error) {
-      alert("Erreur lors de l'ajout du créneau. Vérifiez la console pour plus de détails.");
-      console.error("❌ Erreur:", error);
+      console.error("❌ Erreur lors de l'ajout du créneau:", error);
+      let errorMessage = "Erreur lors de l'ajout du créneau.";
+      if (error.message) {
+        errorMessage += "\n\n" + error.message;
+      }
+      if (error.details) {
+        errorMessage += "\n\nDétails: " + error.details;
+      }
+      alert(errorMessage);
     }
     });
   }
@@ -1529,6 +1568,14 @@ function initAddSlotModal() {
           participants.textContent = "Inscrits : " + names;
         }
         card.appendChild(participants);
+        
+        // Afficher le commentaire s'il existe
+        if (slot.comment) {
+          const commentEl = document.createElement("div");
+          commentEl.className = "pk-slot-comment";
+          commentEl.textContent = `💬 ${slot.comment}`;
+          card.appendChild(commentEl);
+        }
   
         const actions = document.createElement("div");
         actions.className = "pk-slot-actions";
