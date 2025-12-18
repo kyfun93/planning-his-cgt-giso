@@ -7,7 +7,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Initialisation du client Supabase
 // Le script Supabase doit être chargé avant app.js (voir index.html)
-let supabase = null;
+// Utiliser une variable locale pour éviter les conflits avec d'éventuelles déclarations globales
+var supabaseClient = null;
 
 function initSupabase() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== "VOTRE_SUPABASE_URL") {
@@ -17,7 +18,7 @@ function initSupabase() {
       const supabaseLib = window.supabaseJs || window.supabase || (typeof supabaseJs !== "undefined" ? supabaseJs : null);
       
       if (supabaseLib && supabaseLib.createClient) {
-        supabase = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = supabaseLib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log("✅ Client Supabase initialisé");
         return true;
       } else {
@@ -210,7 +211,7 @@ function getSlotTypes(mainId, subId) {
 
 // Charger les slots pour un mois donné
 async function loadSlotsForMonth(year, month) {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.warn("⚠️ Supabase non configuré, utilisation de données vides");
     return [];
   }
@@ -222,7 +223,7 @@ async function loadSlotsForMonth(year, month) {
     const startDate = formatDateForDB(firstDay);
     const endDate = formatDateForDB(lastDay);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_slots")
       .select("*")
       .gte("date", startDate)
@@ -244,13 +245,13 @@ async function loadSlotsForMonth(year, month) {
 
 // Charger toutes les inscriptions
 async function loadRegistrations() {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.warn("⚠️ Supabase non configuré, utilisation de données vides");
     return [];
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_registrations")
       .select("*");
 
@@ -269,7 +270,7 @@ async function loadRegistrations() {
 
 // Charger l'historique des créneaux passés
 async function loadHistorySlots() {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.warn("⚠️ Supabase non configuré, utilisation de données vides");
     return [];
   }
@@ -279,7 +280,7 @@ async function loadHistorySlots() {
     today.setHours(0, 0, 0, 0);
     const todayStr = formatDateForDB(today);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_slots")
       .select("*")
       .lt("date", todayStr)
@@ -300,13 +301,13 @@ async function loadHistorySlots() {
 
 // Créer un nouveau slot
 async function createSlot(slotData) {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("❌ Supabase non configuré");
     return null;
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_slots")
       .insert([slotData])
       .select()
@@ -327,13 +328,13 @@ async function createSlot(slotData) {
 
 // S'inscrire à un slot
 async function registerToSlot(slotId, colleagueId) {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("❌ Supabase non configuré");
     return null;
   }
 
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_registrations")
       .insert([{ slot_id: slotId, colleague_id: colleagueId }])
       .select()
@@ -354,13 +355,13 @@ async function registerToSlot(slotId, colleagueId) {
 
 // Se désinscrire d'un slot
 async function unregisterFromSlot(slotId, colleagueId) {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("❌ Supabase non configuré");
     return false;
   }
 
   try {
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from("his_registrations")
       .delete()
       .eq("slot_id", slotId)
@@ -381,7 +382,7 @@ async function unregisterFromSlot(slotId, colleagueId) {
 
 // Supprimer un slot (et toutes ses inscriptions via CASCADE)
 async function deleteSlot(slotId) {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.error("❌ Supabase non configuré");
     throw new Error("Supabase n'est pas initialisé");
   }
@@ -392,7 +393,7 @@ async function deleteSlot(slotId) {
   try {
     // D'abord, supprimer toutes les inscriptions associées manuellement
     // (CASCADE devrait le faire automatiquement, mais on le fait explicitement pour être sûr)
-    const { error: deleteRegsError, count: regsCount } = await supabase
+    const { error: deleteRegsError, count: regsCount } = await supabaseClient
       .from("his_registrations")
       .delete({ count: "exact" })
       .eq("slot_id", slotId);
@@ -405,7 +406,7 @@ async function deleteSlot(slotId) {
     }
 
     // Ensuite, supprimer le slot
-    const { data, error, count } = await supabase
+    const { data, error, count } = await supabaseClient
       .from("his_slots")
       .delete({ count: "exact" })
       .eq("id", slotId);
@@ -454,7 +455,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("🚀 Initialisation de l'application");
   
   // S'assurer que Supabase est initialisé
-  if (!supabase) {
+  if (!supabaseClient) {
     initSupabase();
   }
   
@@ -827,22 +828,18 @@ function initColleagueSelect() {
 
 // Charge les combinaisons (main_id, sub_id, slot_type) dont le dernier HIS < J-60
 async function loadInactiveCombinationsLast2Months() {
-  if (!supabase) {
+  if (!supabaseClient) {
     console.warn("⚠️ Supabase non configuré pour loadInactiveCombinationsLast2Months");
     return [];
   }
   try {
-    // Baseline remise à aujourd'hui : on considère qu'aucune combinaison n'est en retard
-    console.log("⏱️ Baseline activité réinitialisée à aujourd'hui: aucune combinaison inactive retournée.");
-    return [];
-    
     const today = new Date();
     const threshold = new Date(today);
     threshold.setDate(threshold.getDate() - 60);
     const thresholdStr = formatDateForDB(threshold);
     
     // Récupérer toutes les dates, triées décroissant, puis réduire côté JS
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from("his_slots")
       .select("main_id, sub_id, slot_type, date")
       .order("date", { ascending: false });
@@ -1090,14 +1087,6 @@ async function openHistoryModal() {
         }
         card.appendChild(participants);
         
-        // Afficher le commentaire s'il existe
-        if (slot.comment) {
-          const commentEl = document.createElement("div");
-          commentEl.className = "pk-slot-comment";
-          commentEl.textContent = `💬 ${slot.comment}`;
-          card.appendChild(commentEl);
-        }
-        
         container.appendChild(card);
       });
     });
@@ -1120,7 +1109,6 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   const newSlotSubId = document.getElementById("newSlotSubId");
   const newSlotType = document.getElementById("newSlotType");
   const maxPlacesEl = document.getElementById("newSlotMaxPlaces");
-  const newSlotComment = document.getElementById("newSlotComment");
   const miniCalendar = document.getElementById("miniCalendar");
   if (!addSlotModal || !newSlotDate || !newSlotMainId || !newSlotSubId || !newSlotType || !maxPlacesEl) return;
   
@@ -1128,7 +1116,6 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   // Réinitialiser / Pré-remplir
   newSlotDate.value = "";
   maxPlacesEl.value = "3";
-  if (newSlotComment) newSlotComment.value = "";
   if (miniCalendar) miniCalendar.classList.add("pk-mini-calendar-hidden");
   
   // Sélectionner mainId et déclencher le remplissage des sous-sites
@@ -1365,7 +1352,6 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
-    document.getElementById("newSlotComment").value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1384,7 +1370,6 @@ function initAddSlotModal() {
       newSlotSubId.innerHTML = "";
       newSlotType.innerHTML = "";
       document.getElementById("newSlotMaxPlaces").value = "3";
-      document.getElementById("newSlotComment").value = "";
       
       // Fermer la modale du jour
       closeDayModal();
@@ -1401,7 +1386,6 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
-    document.getElementById("newSlotComment").value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1420,11 +1404,9 @@ function initAddSlotModal() {
     const subId = newSlotSubId.value;
     const slotType = newSlotType.value;
     const maxPlaces = parseInt(document.getElementById("newSlotMaxPlaces").value);
-    const commentEl = document.getElementById("newSlotComment");
-    const comment = commentEl ? commentEl.value.trim() : "";
 
     if (!date || !mainId || !subId || !slotType || !maxPlaces) {
-      alert("Veuillez remplir tous les champs obligatoires");
+      alert("Veuillez remplir tous les champs");
       return;
     }
 
@@ -1440,25 +1422,8 @@ function initAddSlotModal() {
         label: slotType,
         max_places: maxPlaces
       };
-      
-      // Ajouter le commentaire seulement s'il n'est pas vide
-      if (comment) {
-        newSlot.comment = comment;
-      }
 
-      try {
-        await createSlot(newSlot);
-      } catch (commentError) {
-        // Si l'erreur indique que la colonne comment n'existe pas, réessayer sans le commentaire
-        const errorMsg = commentError.message || JSON.stringify(commentError);
-        if (comment && (errorMsg.includes("comment") || errorMsg.includes("column") || errorMsg.includes("does not exist"))) {
-          console.warn("⚠️ Colonne 'comment' non trouvée, création du créneau sans commentaire");
-          delete newSlot.comment;
-          await createSlot(newSlot);
-        } else {
-          throw commentError;
-        }
-      }
+      await createSlot(newSlot);
 
       // Fermer la modale et rafraîchir
       closeModal();
@@ -1467,15 +1432,8 @@ function initAddSlotModal() {
       
       console.log("✅ Créneau ajouté:", newSlot);
     } catch (error) {
-      console.error("❌ Erreur lors de l'ajout du créneau:", error);
-      let errorMessage = "Erreur lors de l'ajout du créneau.";
-      if (error.message) {
-        errorMessage += "\n\n" + error.message;
-      }
-      if (error.details) {
-        errorMessage += "\n\nDétails: " + error.details;
-      }
-      alert(errorMessage);
+      alert("Erreur lors de l'ajout du créneau. Vérifiez la console pour plus de détails.");
+      console.error("❌ Erreur:", error);
     }
     });
   }
@@ -1568,14 +1526,6 @@ function initAddSlotModal() {
           participants.textContent = "Inscrits : " + names;
         }
         card.appendChild(participants);
-        
-        // Afficher le commentaire s'il existe
-        if (slot.comment) {
-          const commentEl = document.createElement("div");
-          commentEl.className = "pk-slot-comment";
-          commentEl.textContent = `💬 ${slot.comment}`;
-          card.appendChild(commentEl);
-        }
   
         const actions = document.createElement("div");
         actions.className = "pk-slot-actions";
