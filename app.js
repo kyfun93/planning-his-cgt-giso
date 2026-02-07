@@ -7,8 +7,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Initialisation du client Supabase
 // Le script Supabase doit être chargé avant app.js (voir index.html)
-// Utiliser une variable locale pour éviter les conflits avec d'éventuelles déclarations globales
-var supabaseClient = null;
+// On utilise supabaseClient pour éviter le conflit avec la variable globale "supabase" du CDN
+let supabaseClient = null;
 
 function initSupabase() {
   if (SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_URL !== "VOTRE_SUPABASE_URL") {
@@ -89,24 +89,19 @@ const ATTACHMENT_HIERARCHY = [
   { mainId: "voie", mainLabel: "VOIE", subId: "voie_villette", subLabel: "Villette", slotType: "Nuit" },
   
   // B. MCBT
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe nuit" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe A" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe B" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe C" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vdf", subLabel: "VDF", slotType: "Matin" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vdf", subLabel: "VDF", slotType: "Après-Midi" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "Équipe nuit" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "Équipe A" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "Équipe B" },
-  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "Équipe C" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "Équipe de nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_blr", subLabel: "BLR", slotType: "3x8" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vafo", subLabel: "VAFO", slotType: "Équipe de nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_vafo", subLabel: "VAFO", slotType: "3x8" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "Équipe de nuit" },
+  { mainId: "mcbt", mainLabel: "MCBT", subId: "mcbt_ntr4", subLabel: "NTR4", slotType: "3x8" },
   
   // C. EMHT
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "EMI" },
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "PEF Câbles" },
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "Lachaise" },
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "Denfert" },
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "SITE" },
-  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "Traction M" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "Jour" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "MTM nuit" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_toul", subLabel: "Toul", slotType: "MTM 3X8" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_epi_pht", subLabel: "EPI - PHT", slotType: "DENFERT" },
+  { mainId: "emht", mainLabel: "EMHT", subId: "emht_epi_pht", subLabel: "EPI - PHT", slotType: "LACHAISE" },
   
   // D. CT
   { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sig_3x8", subLabel: "Bourdon SIG 3×8", slotType: "Jour" },
@@ -115,9 +110,8 @@ const ATTACHMENT_HIERARCHY = [
   { mainId: "ct", mainLabel: "CT", subId: "ct_ims_vas", subLabel: "IMS VAS", slotType: "Jour" },
   { mainId: "ct", mainLabel: "CT", subId: "ct_ims_pst", subLabel: "IMS PST", slotType: "Jour" },
   { mainId: "ct", mainLabel: "CT", subId: "ct_denfert", subLabel: "Denfert", slotType: "Jour" },
-  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_ecv", subLabel: "Bourdon ECV", slotType: "Matin" },
-  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_ecv", subLabel: "Bourdon ECV", slotType: "Après-Midi" },
-  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_sin", subLabel: "Bourdon SIN", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_mc", subLabel: "Bourdon MC", slotType: "Jour" },
+  { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_mc", subLabel: "Bourdon MC", slotType: "Nuit" },
   { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_log", subLabel: "Bourdon LOG", slotType: "Jour" },
   { mainId: "ct", mainLabel: "CT", subId: "ct_bourdon_esae_m", subLabel: "Bourdon ESAE M", slotType: "Jour" },
   { mainId: "ct", mainLabel: "CT", subId: "ct_nanterre", subLabel: "Nanterre", slotType: "Après-Midi" },
@@ -133,7 +127,7 @@ const ATTACHMENT_HIERARCHY = [
   { mainId: "eso", mainLabel: "ESO", subId: "eso_barbes", subLabel: "Barbès", slotType: "Matin" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_barbes", subLabel: "Barbès", slotType: "Après-Midi" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_csa", subLabel: "CSA", slotType: "" },
-  { mainId: "eso", mainLabel: "ESO", subId: "eso_cpmo", subLabel: "CPMO", slotType: "Jour VDF" },
+  { mainId: "eso", mainLabel: "ESO", subId: "eso_cpmo", subLabel: "CPMO", slotType: "Jour VAFO" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_cpmo", subLabel: "CPMO", slotType: "Nuit Chanzy" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_barbes", subLabel: "Barbès", slotType: "Nuit" },
   { mainId: "eso", mainLabel: "ESO", subId: "eso_chanzy", subLabel: "Chanzy", slotType: "Nuit" },
@@ -834,6 +828,10 @@ async function loadInactiveCombinationsLast2Months() {
     return [];
   }
   try {
+    // Baseline remise à aujourd'hui : on considère qu'aucune combinaison n'est en retard
+    console.log("⏱️ Baseline activité réinitialisée à aujourd'hui: aucune combinaison inactive retournée.");
+    return [];
+    
     const today = new Date();
     const threshold = new Date(today);
     threshold.setDate(threshold.getDate() - 60);
@@ -1300,19 +1298,24 @@ function initAddSlotModal() {
     checkMobile();
     window.addEventListener("resize", checkMobile);
     
-    newSlotDate.addEventListener("focus", (e) => {
-      // Sur mobile, utiliser le sélecteur natif (ne pas afficher le mini-calendrier)
-      if (isMobile()) {
-        // Laisser le comportement natif du champ date sur mobile
-        return;
-      }
-      
-      // Sur desktop, afficher le mini-calendrier
-      e.preventDefault();
+    function openMiniCalendar() {
+      if (isMobile()) return;
       miniCalendarYear = new Date().getFullYear();
       miniCalendarMonth = new Date().getMonth();
       renderMiniCalendar();
       miniCalendar.classList.remove("pk-mini-calendar-hidden");
+    }
+
+    newSlotDate.addEventListener("focus", () => {
+      if (isMobile()) return;
+      openMiniCalendar();
+    });
+
+    // Ouvrir aussi au clic (évite les soucis d'ordre focus/click selon les navigateurs)
+    newSlotDate.addEventListener("click", (e) => {
+      if (isMobile()) return;
+      e.stopPropagation(); // éviter que le clic remonte et déclenche la fermeture
+      openMiniCalendar();
     });
     
     // Fermer le calendrier si on clique ailleurs ou sur un autre champ
