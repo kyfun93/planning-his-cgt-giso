@@ -754,14 +754,15 @@ function initColleagueSelect() {
             const count = state.registrations.filter(r => r.slot_id === slot.id).length;
             // Si vue globale, afficher le site complet, sinon juste le label
             let displayText;
+            const typeDisplay = formatSlotTypeForDisplay(slot);
             if (state.selectedMainId === "all") {
               const mainLabel = getMainAttachmentLabel(slot.main_id);
               const subLabel = getSubAttachmentLabel(slot.sub_id);
-              displayText = `${mainLabel} → ${subLabel} → ${slot.slot_type} : ${count}/${slot.max_places}`;
+              displayText = `${mainLabel} → ${subLabel} → ${typeDisplay} : ${count}/${slot.max_places}`;
             } else {
               const mainLabel = getMainAttachmentLabel(slot.main_id);
               const subLabel = getSubAttachmentLabel(slot.sub_id);
-              const displayLabel = subLabel ? `${subLabel} – ${slot.label || slot.slot_type}` : `${mainLabel} – ${slot.label || slot.slot_type}`;
+              const displayLabel = subLabel ? `${subLabel} – ${typeDisplay}` : `${mainLabel} – ${typeDisplay}`;
               displayText = `${displayLabel} : ${count}/${slot.max_places}`;
             }
             
@@ -901,6 +902,22 @@ function formatDateFr(dateStr) {
   const mm = monthNames[d.getMonth()];
   const yyyy = d.getFullYear();
   return `${dd} ${mm} ${yyyy}`;
+}
+
+/** Pour un créneau "nuit", affiche "nuit du 8 au 9 mars" (nuit du J-1 au J). Sinon retourne le type tel quel. */
+function formatSlotTypeForDisplay(slot) {
+  const raw = (slot.label || slot.slot_type || "").trim();
+  const isNuit = /nuit/i.test(slot.slot_type || "") || /nuit/i.test(slot.label || "");
+  if (!isNuit || !slot.date) return raw || slot.slot_type || "";
+  const parts = slot.date.split("-").map(Number);
+  if (parts.length !== 3) return raw || slot.slot_type || "";
+  const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+  const prevDay = new Date(dateObj);
+  prevDay.setDate(prevDay.getDate() - 1);
+  const dayPrev = prevDay.getDate();
+  const dayEnd = dateObj.getDate();
+  const monthStr = monthNames[dateObj.getMonth()];
+  return `nuit du ${dayPrev} au ${dayEnd} ${monthStr}`;
 }
 
 function formatMainSubSlot(mainId, subId, slotType) {
@@ -1055,7 +1072,8 @@ async function openHistoryModal() {
         titleEl.className = "pk-slot-title";
         const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
         const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
-        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${slot.label || slot.slot_type}`;
+        const typeDisplay = formatSlotTypeForDisplay(slot);
+        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${typeDisplay}`;
         
         const badge = document.createElement("span");
         badge.className = "pk-slot-badge";
@@ -1500,7 +1518,8 @@ function initAddSlotModal() {
         titleEl.className = "pk-slot-title";
       const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
       const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
-      titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${slot.label || slot.slot_type}`;
+      const typeDisplay = formatSlotTypeForDisplay(slot);
+      titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${typeDisplay}`;
   
         const badge = document.createElement("span");
         badge.className = "pk-slot-badge";

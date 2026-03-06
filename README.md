@@ -113,6 +113,31 @@ Le projet peut être déployé sur :
 
 **Important** : N'oubliez pas de configurer vos credentials Supabase dans `app.js` avant le déploiement.
 
+## Mise à jour : faire fonctionner les changements
+
+Quand le code (sites, sous-sites, types) a été modifié dans `app.js` et poussé sur GitHub :
+
+### 1. Que le nouveau code soit bien chargé (obligatoire)
+
+- **Si le site est hébergé (ex. GitHub Pages)**  
+  - Attendre 1–2 minutes après le push.  
+  - Faire un **rechargement forcé** pour éviter le cache : **Ctrl+Shift+R** (Windows/Linux) ou **Cmd+Shift+R** (Mac).  
+  - Ou ouvrir le site en **navigation privée** pour tester.
+
+- **Si vous ouvrez les fichiers en local**  
+  - Rechargement forcé (Ctrl+Shift+R / Cmd+Shift+R) pour que le navigateur recharge `app.js`.
+
+Les **menus A, B et C** (sites, sous-sites, types) viennent de `app.js`. Dès que le bon `app.js` est chargé, les nouvelles options (VAFO, 3x8, Toul Jour/MTM nuit/MTM 3X8, EPI-PHT, etc.) apparaissent.
+
+### 2. Mettre à jour les anciens créneaux en base (optionnel)
+
+Les **créneaux déjà enregistrés** sur le calendrier viennent de Supabase. Leur `main_id`, `sub_id`, `slot_type` sont stockés en base. Pour que les anciens créneaux affichent les nouveaux types, il faut mettre à jour la table `his_slots` dans Supabase.
+
+1. Ouvrez votre projet Supabase → **SQL Editor**.
+2. Exécutez le script `supabase_migration_types.sql` (voir ce fichier dans le projet) pour adapter les anciennes valeurs de `slot_type` aux nouvelles. Vous pouvez l’adapter selon vos besoins avant de l’exécuter.
+
+Après ça, la mise à jour est complète : nouveau code chargé + base alignée si vous avez choisi de lancer la migration.
+
 ## Sécurité
 
 Les politiques RLS (Row Level Security) sont configurées pour permettre la lecture et l'écriture à tous. Pour un environnement de production, vous devriez :
