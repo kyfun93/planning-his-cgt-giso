@@ -754,15 +754,15 @@ function initColleagueSelect() {
             const count = state.registrations.filter(r => r.slot_id === slot.id).length;
             // Si vue globale, afficher le site complet, sinon juste le label
             let displayText;
-            const typeDisplay = formatSlotTypeForDisplay(slot);
+            const titleDisplay = formatSlotTitleForDisplay(slot);
             if (state.selectedMainId === "all") {
               const mainLabel = getMainAttachmentLabel(slot.main_id);
               const subLabel = getSubAttachmentLabel(slot.sub_id);
-              displayText = `${mainLabel} → ${subLabel} → ${typeDisplay} : ${count}/${slot.max_places}`;
+              displayText = `${mainLabel} → ${subLabel} → ${titleDisplay} : ${count}/${slot.max_places}`;
             } else {
               const mainLabel = getMainAttachmentLabel(slot.main_id);
               const subLabel = getSubAttachmentLabel(slot.sub_id);
-              const displayLabel = subLabel ? `${subLabel} – ${typeDisplay}` : `${mainLabel} – ${typeDisplay}`;
+              const displayLabel = subLabel ? `${subLabel} – ${titleDisplay}` : `${mainLabel} – ${titleDisplay}`;
               displayText = `${displayLabel} : ${count}/${slot.max_places}`;
             }
             
@@ -906,11 +906,11 @@ function formatDateFr(dateStr) {
 
 /** Pour un créneau "nuit", affiche "nuit du 8 au 9 mars" (nuit du J-1 au J). Sinon retourne le type tel quel. */
 function formatSlotTypeForDisplay(slot) {
-  const raw = (slot.label || slot.slot_type || "").trim();
-  const isNuit = /nuit/i.test(slot.slot_type || "") || /nuit/i.test(slot.label || "");
-  if (!isNuit || !slot.date) return raw || slot.slot_type || "";
+  const rawType = (slot.slot_type || "").trim();
+  const isNuit = /nuit/i.test(rawType);
+  if (!isNuit || !slot.date) return rawType;
   const parts = slot.date.split("-").map(Number);
-  if (parts.length !== 3) return raw || slot.slot_type || "";
+  if (parts.length !== 3) return rawType;
   const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
   const prevDay = new Date(dateObj);
   prevDay.setDate(prevDay.getDate() - 1);
@@ -918,6 +918,12 @@ function formatSlotTypeForDisplay(slot) {
   const dayEnd = dateObj.getDate();
   const monthStr = monthNames[dateObj.getMonth()];
   return `nuit du ${dayPrev} au ${dayEnd} ${monthStr}`;
+}
+
+function formatSlotTitleForDisplay(slot) {
+  const typeDisplay = formatSlotTypeForDisplay(slot);
+  const comment = (slot.label || "").trim();
+  return comment ? `${typeDisplay} — ${comment}` : typeDisplay;
 }
 
 function formatMainSubSlot(mainId, subId, slotType) {
@@ -1072,8 +1078,8 @@ async function openHistoryModal() {
         titleEl.className = "pk-slot-title";
         const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
         const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
-        const typeDisplay = formatSlotTypeForDisplay(slot);
-        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${typeDisplay}`;
+        const titleDisplay = formatSlotTitleForDisplay(slot);
+        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${titleDisplay}`;
         
         const badge = document.createElement("span");
         badge.className = "pk-slot-badge";
@@ -1126,6 +1132,7 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   const newSlotSubId = document.getElementById("newSlotSubId");
   const newSlotType = document.getElementById("newSlotType");
   const maxPlacesEl = document.getElementById("newSlotMaxPlaces");
+  const newSlotLabel = document.getElementById("newSlotLabel");
   const miniCalendar = document.getElementById("miniCalendar");
   if (!addSlotModal || !newSlotDate || !newSlotMainId || !newSlotSubId || !newSlotType || !maxPlacesEl) return;
   
@@ -1133,6 +1140,7 @@ function openAddSlotPrefilled(mainId, subId, slotType) {
   // Réinitialiser / Pré-remplir
   newSlotDate.value = "";
   maxPlacesEl.value = "3";
+  if (newSlotLabel) newSlotLabel.value = "";
   if (miniCalendar) miniCalendar.classList.add("pk-mini-calendar-hidden");
   
   // Sélectionner mainId et déclencher le remplissage des sous-sites
@@ -1179,6 +1187,7 @@ function initAddSlotModal() {
   const newSlotMainId = document.getElementById("newSlotMainId");
   const newSlotSubId = document.getElementById("newSlotSubId");
   const newSlotType = document.getElementById("newSlotType");
+  const newSlotLabel = document.getElementById("newSlotLabel");
 
   if (!addSlotBtn || !addSlotModal) return;
 
@@ -1374,6 +1383,7 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
+    if (newSlotLabel) newSlotLabel.value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1392,6 +1402,7 @@ function initAddSlotModal() {
       newSlotSubId.innerHTML = "";
       newSlotType.innerHTML = "";
       document.getElementById("newSlotMaxPlaces").value = "3";
+      if (newSlotLabel) newSlotLabel.value = "";
       
       // Fermer la modale du jour
       closeDayModal();
@@ -1408,6 +1419,7 @@ function initAddSlotModal() {
     newSlotSubId.innerHTML = "";
     newSlotType.innerHTML = "";
     document.getElementById("newSlotMaxPlaces").value = "3";
+    if (newSlotLabel) newSlotLabel.value = "";
     if (miniCalendar) {
       miniCalendar.classList.add("pk-mini-calendar-hidden");
     }
@@ -1426,6 +1438,7 @@ function initAddSlotModal() {
     const subId = newSlotSubId.value;
     const slotType = newSlotType.value;
     const maxPlaces = parseInt(document.getElementById("newSlotMaxPlaces").value);
+    const label = newSlotLabel ? newSlotLabel.value.trim() : "";
 
     if (!date || !mainId || !subId || !slotType || !maxPlaces) {
       alert("Veuillez remplir tous les champs");
@@ -1441,7 +1454,7 @@ function initAddSlotModal() {
         main_id: mainId,
         sub_id: subId,
         slot_type: slotType,
-        label: slotType,
+        label: label || null,
         max_places: maxPlaces
       };
 
@@ -1516,10 +1529,10 @@ function initAddSlotModal() {
   
         const titleEl = document.createElement("div");
         titleEl.className = "pk-slot-title";
-      const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
-      const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
-      const typeDisplay = formatSlotTypeForDisplay(slot);
-      titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${typeDisplay}`;
+        const mainLabelSlot = getMainAttachmentLabel(slot.main_id);
+        const subLabelSlot = getSubAttachmentLabel(slot.sub_id);
+        const titleDisplay = formatSlotTitleForDisplay(slot);
+        titleEl.textContent = `${mainLabelSlot}${subLabelSlot ? " – " + subLabelSlot : ""} – ${titleDisplay}`;
   
         const badge = document.createElement("span");
         badge.className = "pk-slot-badge";
