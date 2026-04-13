@@ -318,6 +318,15 @@
     font-weight: 600;
     opacity: 0.85;
   }
+
+  .pk-day-weekday {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    opacity: 0.9;
+    margin-top: -0.15rem;
+  }
   
   .pk-day-slots-summary {
     margin-top: auto;

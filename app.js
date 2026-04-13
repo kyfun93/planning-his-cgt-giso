@@ -133,7 +133,17 @@ const ATTACHMENT_HIERARCHY = [
   { mainId: "eso", mainLabel: "ESO", subId: "eso_chanzy", subLabel: "Chanzy", slotType: "Nuit" },
   
   // F. LEM
-  { mainId: "lem", mainLabel: "LEM", subId: "lem_boissy", subLabel: "Boissy", slotType: "Jour" }
+  { mainId: "lem", mainLabel: "LEM", subId: "lem_boissy", subLabel: "Boissy", slotType: "Jour" },
+
+  // G. GIGP
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_blr", subLabel: "BLR", slotType: "Jour" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_blr", subLabel: "BLR", slotType: "Nuit" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_dulon", subLabel: "DULON", slotType: "Jour" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_dulon", subLabel: "DULON", slotType: "Nuit" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_nogent", subLabel: "Nogent", slotType: "Jour" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_nogent", subLabel: "Nogent", slotType: "Nuit" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_l18", subLabel: "L 18", slotType: "Jour" },
+  { mainId: "gigp", mainLabel: "GIGP", subId: "gigp_l18", subLabel: "L 18", slotType: "Nuit" }
 ];
 
 // Fonction pour obtenir les attachements principaux uniques
@@ -201,6 +211,8 @@ function getSlotTypes(mainId, subId) {
     "novembre",
     "décembre"
   ];
+
+const weekdayNamesShort = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
 // === Fonctions Supabase ===
 
@@ -723,6 +735,11 @@ function initColleagueSelect() {
       num.className = "pk-day-number";
       num.textContent = day;
       dayDiv.appendChild(num);
+
+      const weekday = document.createElement("div");
+      weekday.className = "pk-day-weekday";
+      weekday.textContent = weekdayNamesShort[new Date(year, month, day).getDay()];
+      dayDiv.appendChild(weekday);
   
     // Filtrage selon mainId, subId et slotType (ou "all" pour tout afficher)
     const daySlots = state.slots.filter(s => {
@@ -806,6 +823,7 @@ function initColleagueSelect() {
   
   function initModal() {
     const closeBtn = document.getElementById("closeDayModal");
+    const closeBottomBtn = document.getElementById("closeDayModalBottom");
     const modal = document.getElementById("dayModal");
 
   if (!closeBtn || !modal) {
@@ -814,6 +832,7 @@ function initColleagueSelect() {
   }
   
     closeBtn.addEventListener("click", closeDayModal);
+    if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeDayModal);
   
     modal.addEventListener("click", e => {
       if (e.target === modal) closeDayModal();
