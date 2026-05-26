@@ -70,6 +70,7 @@ const COLLEAGUES = [
     { id: "stephane_tondut", name: "Stéphane TONDUT" },
     { id: "yannick_trebouta", name: "Yannick TREBOUTA" },
     { id: "eric_turban", name: "Éric TURBAN" },
+    { id: "cedric_painot", name: "Cédric PAINOT" },
     { id: "wilfried_van_niel", name: "Wilfried VAN NIEL" }
   ];
   
