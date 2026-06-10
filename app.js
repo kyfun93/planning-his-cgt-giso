@@ -73,6 +73,59 @@ const COLLEAGUES = [
     { id: "cedric_painot", name: "Cédric PAINOT" },
     { id: "wilfried_van_niel", name: "Wilfried VAN NIEL" }
   ];
+
+// Adresses des attachements (source : UrbanWeb RATP INFRAS, 2020–2022)
+const ATTACHMENT_ADDRESSES = [
+  {
+    unit: "Département RATP INFRAS",
+    items: [
+      { name: "VAL DE FONTENAY – Val Bienvenüe", address: "11 rue Louison Bobet, 94724 Fontenay-sous-Bois" },
+      { name: "VAL DE FONTENAY – Jorasse", address: "12 avenue du Val de Fontenay, 94724 Fontenay-sous-Bois" }
+    ]
+  },
+  {
+    unit: "Unité CT",
+    items: [
+      { name: "DENFERT", address: "73 Bd Saint-Jacques, 75014 Paris" },
+      { name: "BOURDON", address: "21 Bd Bourdon, 75004 Paris" },
+      { name: "NANTERRE", address: "33 avenue Henri Martin, 92000 Nanterre" },
+      { name: "BOURG LA REINE", address: "1 place de la Gare, 92340 Bourg-la-Reine" },
+      { name: "JOINVILLE LE PONT", address: "2 avenue Jean Jaurès, 94340 Joinville-le-Pont" },
+      { name: "BRY SUR MARNE", address: "63 Bd Gallieni, 94360 Bry-sur-Marne" }
+    ]
+  },
+  {
+    unit: "Unité ESO",
+    items: [
+      { name: "BARBES", address: "38 rue de la Charbonnière, 75018 Paris" },
+      { name: "SAINT MARTIN", address: "Station Strasbourg Saint-Denis, Ligne 8" }
+    ]
+  },
+  {
+    unit: "Unité TDE",
+    items: [
+      { name: "TOUL", address: "45 rue de Toul, 75012 Paris" },
+      { name: "DENFERT", address: "71 boulevard Saint-Jacques, 75014 Paris" },
+      { name: "LACHAISE", address: "23-25 rue de Nanettes, 75011 Paris" },
+      { name: "NANTERRE", address: "33 avenue Henri Martin, 92000 Nanterre" },
+      { name: "BOURG LA REINE", address: "1 place de la Gare, 92340 Bourg-la-Reine" },
+      { name: "VAL DE FONTENAY", address: "199 rue Carnot, 94127 Fontenay-sous-Bois" },
+      { name: "BRY SUR MARNE", address: "63 Bd Gallieni, 94360 Bry-sur-Marne" }
+    ]
+  },
+  {
+    unit: "Unité VOIE",
+    items: [
+      { name: "TOUL", address: "45 rue de Toul, 75012 Paris" },
+      { name: "REPUBLIQUE", address: "Station République" },
+      { name: "VILLETTE", address: "6-8-10 sente à Bigot, 75019 Paris" },
+      { name: "NANTERRE", address: "13 rue Nouvelle, 92000 Nanterre" },
+      { name: "NOGENT SUR MARNE", address: "8 bis avenue Georges Clémenceau, 94130 Nogent-sur-Marne" },
+      { name: "SUCY BONNEUIL", address: "17 rue du Chemin Vert, 94370 Sucy-en-Brie" },
+      { name: "MASSY PALAISEAU", address: "12 Bd de la Grande Ceinture, 91120 Palaiseau" }
+    ]
+  }
+];
   
 // Structure hiérarchique des attachements
 // Format: { mainId, mainLabel, subId, subLabel, slotType }
@@ -473,6 +526,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initModal();
   initAddSlotModal();
   initInactiveSlotsModal();
+  initAddressesModal();
   initHistoryModal();
   
   // Charger les données depuis Supabase
@@ -1017,6 +1071,82 @@ async function openInactiveSlotsModal() {
 function closeInactiveSlotsModal() {
   const modal = document.getElementById("inactiveSlotsModal");
   if (modal) modal.classList.add("pk-modal-hidden");
+}
+
+// === Adresses des attachements ===
+
+function initAddressesModal() {
+  const btn = document.getElementById("showAddressesBtn");
+  const modal = document.getElementById("addressesModal");
+  const closeBtn = document.getElementById("closeAddressesModal");
+  if (!btn || !modal || !closeBtn) return;
+
+  btn.addEventListener("click", openAddressesModal);
+  closeBtn.addEventListener("click", closeAddressesModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeAddressesModal();
+  });
+}
+
+function openAddressesModal() {
+  const modal = document.getElementById("addressesModal");
+  const container = document.getElementById("addressesContainer");
+  if (!modal || !container) return;
+
+  container.innerHTML = "";
+
+  const note = document.createElement("p");
+  note.className = "pk-addresses-note";
+  note.textContent = "Source : UrbanWeb RATP INFRAS (document 2020–2022). Vérifier si besoin les adresses auprès du service.";
+  container.appendChild(note);
+
+  ATTACHMENT_ADDRESSES.forEach(section => {
+    const sectionEl = document.createElement("section");
+    sectionEl.className = "pk-addresses-section";
+
+    const title = document.createElement("h3");
+    title.className = "pk-addresses-unit";
+    title.textContent = section.unit;
+    sectionEl.appendChild(title);
+
+    section.items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "pk-addresses-item";
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "pk-addresses-name";
+      nameEl.textContent = item.name;
+
+      const addrEl = document.createElement("div");
+      addrEl.className = "pk-addresses-address";
+      addrEl.textContent = item.address;
+
+      row.appendChild(nameEl);
+      row.appendChild(addrEl);
+
+      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`;
+      const link = document.createElement("a");
+      link.className = "pk-addresses-map-link";
+      link.href = mapUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "Ouvrir dans Maps";
+      row.appendChild(link);
+
+      sectionEl.appendChild(row);
+    });
+
+    container.appendChild(sectionEl);
+  });
+
+  modal.classList.remove("pk-modal-hidden");
+  document.body.classList.add("pk-modal-open");
+}
+
+function closeAddressesModal() {
+  const modal = document.getElementById("addressesModal");
+  if (modal) modal.classList.add("pk-modal-hidden");
+  document.body.classList.remove("pk-modal-open");
 }
 
 // === Historique des créneaux ===

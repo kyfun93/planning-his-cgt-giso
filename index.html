@@ -48,10 +48,24 @@
     </section>
   </main>
 
-  <!-- Bouton historique en bas de page -->
+  <!-- Boutons en bas de page -->
   <footer class="pk-footer">
-    <button id="showHistoryBtn" class="pk-btn pk-btn-history">📋 Historique des créneaux</button>
+    <button id="showAddressesBtn" class="pk-btn pk-btn-footer">📍 Adresses des attachements</button>
+    <button id="showHistoryBtn" class="pk-btn pk-btn-footer">📋 Historique des créneaux</button>
   </footer>
+
+  <!-- Modale adresses des attachements -->
+  <div id="addressesModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content">
+      <div class="pk-modal-header">
+        <h2>Adresses des attachements</h2>
+        <button id="closeAddressesModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="addressesContainer" class="pk-addresses-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modale historique des créneaux -->
   <div id="historyModal" class="pk-modal pk-modal-hidden">
