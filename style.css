@@ -850,20 +850,50 @@
       z-index: 10000;
     }
     
-    .pk-modal-add-slot {
+    .pk-modal-add-slot,
+    .pk-modal-scrollable {
       width: 100%;
       max-width: 100%;
       height: 100vh;
+      height: 100dvh;
       max-height: 100vh;
+      max-height: 100dvh;
       border-radius: 0;
       padding: 0;
       margin: 0;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
       transform: translate3d(0, 0, 0);
       -webkit-transform: translate3d(0, 0, 0);
       position: relative;
       z-index: 10001;
+    }
+
+    .pk-modal-scrollable .pk-modal-header {
+      flex-shrink: 0;
+      padding: 1rem 1rem 0.8rem;
+      margin: 0;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    }
+
+    .pk-modal-scrollable .pk-modal-header h2 {
+      font-size: 1rem;
+      margin: 0;
+    }
+
+    .pk-modal-scrollable .pk-addresses-list,
+    .pk-modal-scrollable .pk-history-list,
+    .pk-modal-scrollable .pk-inactive-slots-list {
+      flex: 1;
+      min-height: 0;
+      max-height: none;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+      padding: 1rem;
+      padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
     
     /* Masquer le header quand le formulaire est ouvert sur mobile */
@@ -1043,6 +1073,9 @@
     gap: 0.5rem;
     max-height: 60vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     font-size: 0.85rem;
   }
   
@@ -1099,6 +1132,9 @@
   .pk-addresses-list {
     max-height: 70vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     padding: 0.5rem 0.2rem;
   }
 
@@ -1160,6 +1196,9 @@
     gap: 1.5rem;
     max-height: 70vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
     padding: 0.5rem;
   }
   
