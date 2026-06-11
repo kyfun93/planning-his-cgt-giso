@@ -1124,14 +1124,26 @@ function openAddressesModal() {
       row.appendChild(nameEl);
       row.appendChild(addrEl);
 
-      const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address)}`;
-      const link = document.createElement("a");
-      link.className = "pk-addresses-map-link";
-      link.href = mapUrl;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.textContent = "Ouvrir dans Maps";
-      row.appendChild(link);
+      const linksEl = document.createElement("div");
+      linksEl.className = "pk-addresses-nav-links";
+
+      const encodedAddress = encodeURIComponent(item.address);
+      const navLinks = [
+        { label: "Ouvrir dans Maps", href: `https://www.google.com/maps/search/?api=1&query=${encodedAddress}` },
+        { label: "Ouvrir dans Waze", href: `https://waze.com/ul?q=${encodedAddress}&navigate=yes` }
+      ];
+
+      navLinks.forEach(({ label, href }) => {
+        const link = document.createElement("a");
+        link.className = "pk-addresses-nav-link";
+        link.href = href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = label;
+        linksEl.appendChild(link);
+      });
+
+      row.appendChild(linksEl);
 
       sectionEl.appendChild(row);
     });

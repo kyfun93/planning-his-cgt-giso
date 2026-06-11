@@ -1177,15 +1177,20 @@
     line-height: 1.4;
   }
 
-  .pk-addresses-map-link {
-    display: inline-block;
+  .pk-addresses-nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
     margin-top: 0.45rem;
+  }
+
+  .pk-addresses-nav-link {
     font-size: 0.8rem;
     color: #00e5ff;
     text-decoration: none;
   }
 
-  .pk-addresses-map-link:hover {
+  .pk-addresses-nav-link:hover {
     text-decoration: underline;
   }
   
