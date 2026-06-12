@@ -22,8 +22,6 @@
           <!-- rempli par JS -->
         </div>
       </div>
-      <button id="showInactiveSlotsBtn" class="pk-btn pk-btn-ghost">Créneaux non planifiés (2 mois)</button>
-
       <select id="colleagueSelect" class="pk-select">
         <!-- rempli par JS -->
       </select>
@@ -50,9 +48,29 @@
 
   <!-- Boutons en bas de page -->
   <footer class="pk-footer">
-    <button id="showAddressesBtn" class="pk-btn pk-btn-footer">📍 Adresses des attachements</button>
-    <button id="showHistoryBtn" class="pk-btn pk-btn-footer">📋 Historique des créneaux</button>
+    <div class="pk-footer-grid">
+      <button id="showAddressesBtn" class="pk-btn pk-btn-footer">📍 Adresses</button>
+      <button id="showHistoryBtn" class="pk-btn pk-btn-footer">📋 Historique</button>
+      <button id="showInactiveSlotsBtn" class="pk-btn pk-btn-footer pk-btn-footer-split">
+        <span>Créneaux non planifiés</span>
+        <span class="pk-btn-footer-sub">(2 mois)</span>
+      </button>
+      <button id="showTopBtn" class="pk-btn pk-btn-footer">🏆 Top HIS</button>
+    </div>
   </footer>
+
+  <!-- Modale Top HIS -->
+  <div id="topModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content pk-modal-scrollable">
+      <div class="pk-modal-header">
+        <h2>Top HIS</h2>
+        <button id="closeTopModal" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="topContainer" class="pk-top-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modale adresses des attachements -->
   <div id="addressesModal" class="pk-modal pk-modal-hidden">

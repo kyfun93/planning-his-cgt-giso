@@ -526,6 +526,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initModal();
   initAddSlotModal();
   initInactiveSlotsModal();
+  initTopModal();
   initAddressesModal();
   initHistoryModal();
   
@@ -1066,11 +1067,108 @@ async function openInactiveSlotsModal() {
   }
   
   modal.classList.remove("pk-modal-hidden");
+  document.body.classList.add("pk-modal-open");
 }
 
 function closeInactiveSlotsModal() {
   const modal = document.getElementById("inactiveSlotsModal");
   if (modal) modal.classList.add("pk-modal-hidden");
+  document.body.classList.remove("pk-modal-open");
+}
+
+// === Top HIS ===
+
+const TOP_MEDALS = ["🥇", "🥈", "🥉"];
+const TOP_MEDAL_CLASSES = ["pk-top-item--gold", "pk-top-item--silver", "pk-top-item--bronze"];
+
+async function getHisRanking() {
+  const registrations = await loadRegistrations();
+  const counts = new Map(COLLEAGUES.map(c => [c.id, 0]));
+  registrations.forEach(r => {
+    if (counts.has(r.colleague_id)) {
+      counts.set(r.colleague_id, counts.get(r.colleague_id) + 1);
+    }
+  });
+  return COLLEAGUES
+    .map(c => ({ id: c.id, name: c.name, count: counts.get(c.id) || 0 }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr"));
+}
+
+function initTopModal() {
+  const btn = document.getElementById("showTopBtn");
+  const modal = document.getElementById("topModal");
+  const closeBtn = document.getElementById("closeTopModal");
+  if (!btn || !modal || !closeBtn) return;
+
+  btn.addEventListener("click", openTopModal);
+  closeBtn.addEventListener("click", closeTopModal);
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) closeTopModal();
+  });
+}
+
+async function openTopModal() {
+  const modal = document.getElementById("topModal");
+  const container = document.getElementById("topContainer");
+  if (!modal || !container) return;
+
+  container.innerHTML = "<p class='pk-top-loading'>Chargement du classement...</p>";
+  modal.classList.remove("pk-modal-hidden");
+  document.body.classList.add("pk-modal-open");
+
+  try {
+    const ranking = await getHisRanking();
+    const top3 = ranking.filter(r => r.count > 0).slice(0, 3);
+    container.innerHTML = "";
+
+    const note = document.createElement("p");
+    note.className = "pk-top-note";
+    note.textContent = "Classement depuis le début de l'application.";
+    container.appendChild(note);
+
+    if (top3.length === 0) {
+      const p = document.createElement("p");
+      p.className = "pk-inactive-ok";
+      p.textContent = "Aucune inscription HIS enregistrée pour le moment.";
+      container.appendChild(p);
+      return;
+    }
+
+    top3.forEach((entry, index) => {
+      const item = document.createElement("div");
+      item.className = `pk-top-item ${TOP_MEDAL_CLASSES[index] || ""}`;
+
+      const medal = document.createElement("span");
+      medal.className = "pk-top-medal";
+      medal.textContent = TOP_MEDALS[index];
+
+      const info = document.createElement("div");
+      info.className = "pk-top-info";
+
+      const name = document.createElement("div");
+      name.className = "pk-top-name";
+      name.textContent = entry.name;
+
+      const count = document.createElement("div");
+      count.className = "pk-top-count";
+      count.textContent = `${entry.count} HIS`;
+
+      info.appendChild(name);
+      info.appendChild(count);
+      item.appendChild(medal);
+      item.appendChild(info);
+      container.appendChild(item);
+    });
+  } catch (error) {
+    container.innerHTML = "<p class='pk-inactive-ok'>Impossible de charger le classement.</p>";
+    console.error("❌ Erreur Top HIS:", error);
+  }
+}
+
+function closeTopModal() {
+  const modal = document.getElementById("topModal");
+  if (modal) modal.classList.add("pk-modal-hidden");
+  document.body.classList.remove("pk-modal-open");
 }
 
 // === Adresses des attachements ===
