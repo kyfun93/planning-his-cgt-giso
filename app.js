@@ -1082,10 +1082,15 @@ const TOP_MEDALS = ["🥇", "🥈", "🥉"];
 const TOP_MEDAL_CLASSES = ["pk-top-item--gold", "pk-top-item--silver", "pk-top-item--bronze"];
 
 async function getHisRanking() {
-  const registrations = await loadRegistrations();
+  // Ne compter que les HIS déjà passés (évite de fausser le top avec inscriptions/désinscriptions futures)
+  const [historySlots, registrations] = await Promise.all([
+    loadHistorySlots(),
+    loadRegistrations()
+  ]);
+  const pastSlotIds = new Set(historySlots.map(s => s.id));
   const counts = new Map(COLLEAGUES.map(c => [c.id, 0]));
   registrations.forEach(r => {
-    if (counts.has(r.colleague_id)) {
+    if (pastSlotIds.has(r.slot_id) && counts.has(r.colleague_id)) {
       counts.set(r.colleague_id, counts.get(r.colleague_id) + 1);
     }
   });
@@ -1123,7 +1128,7 @@ async function openTopModal() {
 
     const note = document.createElement("p");
     note.className = "pk-top-note";
-    note.textContent = "Classement depuis le début de l'application.";
+    note.textContent = "Classement sur les HIS déjà passés uniquement (les créneaux à venir ne comptent pas).";
     container.appendChild(note);
 
     if (top3.length === 0) {
