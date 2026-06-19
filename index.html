@@ -11,11 +11,17 @@
 </head>
 <body>
   <header class="pk-header">
-    <div class="pk-header-title">
-      <h1>PLANNING HIS CGT GISO</h1>
-      <p>IP / GISO</p>
+    <div class="pk-header-top">
+      <div class="pk-header-title">
+        <h1>PLANNING HIS CGT GISO</h1>
+        <p>IP / GISO</p>
+      </div>
+      <nav class="pk-module-tabs" aria-label="Modules">
+        <button id="tabHis" type="button" class="pk-tab pk-tab--active">Planning HIS</button>
+        <button id="tabElections" type="button" class="pk-tab">Planning élections</button>
+      </nav>
     </div>
-    <div class="pk-header-filters">
+    <div id="hisHeaderFilters" class="pk-header-filters">
       <!-- Menu de sélection hiérarchique compact -->
       <div class="pk-dropdown-menu">
         <div id="dropdownMenu" class="pk-dropdown-content pk-dropdown-hidden">
@@ -32,9 +38,16 @@
         <button id="nextMonth" class="pk-btn pk-btn-ghost">▶</button>
       </div>
     </div>
+    <div id="electionsHeaderFilters" class="pk-header-filters pk-module-hidden">
+      <div class="pk-month-nav">
+        <button id="electionsPrevMonth" type="button" class="pk-btn pk-btn-ghost">◀</button>
+        <span id="electionsMonthLabel"></span>
+        <button id="electionsNextMonth" type="button" class="pk-btn pk-btn-ghost">▶</button>
+      </div>
+    </div>
   </header>
 
-  <main class="pk-main">
+  <main id="hisModule" class="pk-main">
     <section class="pk-panel">
       <div class="pk-panel-header">
         <h2 class="pk-panel-title">Mois en cours</h2>
@@ -46,8 +59,23 @@
     </section>
   </main>
 
+  <main id="electionsModule" class="pk-main pk-module-hidden">
+    <section class="pk-panel">
+      <div class="pk-panel-header">
+        <h2 class="pk-panel-title">Présences élections</h2>
+        <div class="pk-panel-actions">
+          <button id="electionsGenerateMonthBtn" type="button" class="pk-btn pk-btn-ghost">⚡ Générer le mois</button>
+          <button id="electionsAddBtn" type="button" class="pk-btn pk-btn-add-slot">+ Ajouter</button>
+        </div>
+      </div>
+      <div id="electionsList" class="pk-elections-list">
+        <!-- rempli par JS -->
+      </div>
+    </section>
+  </main>
+
   <!-- Boutons en bas de page -->
-  <footer class="pk-footer">
+  <footer id="hisFooter" class="pk-footer">
     <div class="pk-footer-grid">
       <button id="showAddressesBtn" class="pk-btn pk-btn-footer">📍 Adresses</button>
       <button id="showHistoryBtn" class="pk-btn pk-btn-footer">📋 Historique</button>
@@ -58,6 +86,84 @@
       <button id="showTopBtn" class="pk-btn pk-btn-footer">🏆 Top HIS</button>
     </div>
   </footer>
+
+  <footer id="electionsFooter" class="pk-footer pk-module-hidden">
+    <div class="pk-footer-grid">
+      <button id="electionsUncoveredBtn" type="button" class="pk-btn pk-btn-footer">⚠️ Non couverts</button>
+      <button id="electionsCopyBtn" type="button" class="pk-btn pk-btn-footer">📋 Copier planning</button>
+      <button id="electionsCopyUncoveredBtn" type="button" class="pk-btn pk-btn-footer pk-btn-footer-split">
+        <span>Copier non couverts</span>
+        <span class="pk-btn-footer-sub">WhatsApp</span>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Modale présence élections (ajout / modification) -->
+  <div id="electionsFormModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content pk-modal-add-slot pk-modal-elections-form">
+      <div class="pk-modal-header">
+        <h3 id="electionsFormTitle">Ajouter une présence</h3>
+        <button id="closeElectionsFormModal" type="button" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div class="pk-modal-form-scroll">
+        <div class="pk-modal-form">
+          <div class="pk-form-group">
+            <label for="electionFormDate" class="pk-form-label">Date :</label>
+            <input type="date" id="electionFormDate" class="pk-select pk-form-input" required>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormMainId" class="pk-form-label">Site :</label>
+            <select id="electionFormMainId" class="pk-select pk-form-input" required></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormSubId" class="pk-form-label">Sous-site :</label>
+            <select id="electionFormSubId" class="pk-select pk-form-input" required></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormType" class="pk-form-label">Type :</label>
+            <select id="electionFormType" class="pk-select pk-form-input" required></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormCreneau" class="pk-form-label">Créneau :</label>
+            <select id="electionFormCreneau" class="pk-select pk-form-input" required></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormAgent1" class="pk-form-label">Agent 1 :</label>
+            <select id="electionFormAgent1" class="pk-select pk-form-input"></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormAgent2" class="pk-form-label">Agent 2 :</label>
+            <select id="electionFormAgent2" class="pk-select pk-form-input"></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormStatus" class="pk-form-label">Statut :</label>
+            <select id="electionFormStatus" class="pk-select pk-form-input" required></select>
+          </div>
+          <div class="pk-form-group">
+            <label for="electionFormComment" class="pk-form-label">Commentaire :</label>
+            <input type="text" id="electionFormComment" class="pk-select pk-form-input" placeholder="Optionnel">
+          </div>
+        </div>
+      </div>
+      <div class="pk-modal-footer">
+        <button id="saveElectionPresence" type="button" class="pk-btn">Enregistrer</button>
+        <button id="cancelElectionPresence" type="button" class="pk-btn pk-btn-ghost">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale créneaux élections non couverts -->
+  <div id="electionsUncoveredModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content pk-modal-scrollable">
+      <div class="pk-modal-header">
+        <h2>Créneaux élections non couverts</h2>
+        <button id="closeElectionsUncoveredModal" type="button" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="electionsUncoveredContainer" class="pk-elections-uncovered-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modale Top HIS -->
   <div id="topModal" class="pk-modal pk-modal-hidden">

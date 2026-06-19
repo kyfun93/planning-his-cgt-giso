@@ -529,8 +529,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initTopModal();
   initAddressesModal();
   initHistoryModal();
-  
-  // Charger les données depuis Supabase
+  initElectionsModule();
+  initModuleTabs();
   await refreshData();
   
   
@@ -2041,5 +2041,708 @@ function getSubAttachmentLabel(id) {
   if (id === "all") return "";
   const sub = ATTACHMENT_HIERARCHY.find(item => item.subId === id);
   return sub ? sub.subLabel : id;
+}
+
+// =============================================================================
+// === Module Planning élections (localStorage, indépendant du HIS) ===
+// =============================================================================
+
+const ELECTIONS_STORAGE_KEY = "planning_elections_cgt_giso_v1";
+
+const ELECTION_STATUSES = [
+  "À couvrir",
+  "Binôme prévu",
+  "Confirmé",
+  "Fait",
+  "Annulé"
+];
+
+const electionsState = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth(),
+  presences: [],
+  editingId: null
+};
+
+function electionPresenceKey(date, mainId, subId, type) {
+  return `${date}|${mainId}|${subId}|${type}`;
+}
+
+function loadElectionsFromStorage() {
+  try {
+    const raw = localStorage.getItem(ELECTIONS_STORAGE_KEY);
+    if (!raw) {
+      electionsState.presences = [];
+      return;
+    }
+    const data = JSON.parse(raw);
+    electionsState.presences = Array.isArray(data.presences) ? data.presences : [];
+  } catch (e) {
+    console.error("Erreur chargement élections:", e);
+    electionsState.presences = [];
+  }
+}
+
+function saveElectionsToStorage() {
+  try {
+    localStorage.setItem(ELECTIONS_STORAGE_KEY, JSON.stringify({
+      presences: electionsState.presences
+    }));
+  } catch (e) {
+    console.error("Erreur sauvegarde élections:", e);
+    alert("Impossible de sauvegarder les données élections (stockage local plein ?).");
+  }
+}
+
+function generateElectionId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `el_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function getCreneauxForType(mainId, subId, type) {
+  if (!mainId || !subId || type === undefined || type === null) return [];
+  return ATTACHMENT_HIERARCHY
+    .filter(item => item.mainId === mainId && item.subId === subId && item.slotType === type)
+    .map(item => item.slotType)
+    .filter((v, i, arr) => arr.indexOf(v) === i);
+}
+
+function getElectionTypeLabel(type) {
+  return type || "(sans type)";
+}
+
+function getElectionCreneauLabel(creneau) {
+  return creneau || "(sans créneau)";
+}
+
+function isElectionUncovered(presence) {
+  if (presence.status === "À couvrir") return true;
+  if (!presence.agent1Id || !presence.agent2Id) return true;
+  return false;
+}
+
+function getStatusCssClass(status) {
+  switch (status) {
+    case "À couvrir": return "pk-status--a-couvrir";
+    case "Binôme prévu": return "pk-status--prevu";
+    case "Confirmé": return "pk-status--confirme";
+    case "Fait": return "pk-status--fait";
+    case "Annulé": return "pk-status--annule";
+    default: return "";
+  }
+}
+
+function formatElectionBinome(presence) {
+  if (!presence.agent1Id || !presence.agent2Id) return "À couvrir";
+  return `${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
+}
+
+function formatElectionWhatsAppBlock(presence) {
+  const site = getMainAttachmentLabel(presence.mainId);
+  const subSite = getSubAttachmentLabel(presence.subId);
+  const type = getElectionTypeLabel(presence.type);
+  const creneau = getElectionCreneauLabel(presence.creneau);
+  const binome = formatElectionBinome(presence);
+  const comment = presence.comment ? presence.comment.trim() : "";
+
+  return [
+    "PLANNING ÉLECTIONS",
+    "",
+    `Date : ${formatDateFr(presence.date)}`,
+    `Site : ${site}`,
+    `Sous-site : ${subSite}`,
+    `Type : ${type}`,
+    `Créneau : ${creneau}`,
+    `Binôme : ${binome}`,
+    `Statut : ${presence.status}`,
+    `Commentaire : ${comment || "—"}`
+  ].join("\n");
+}
+
+function formatElectionsWhatsApp(presences) {
+  if (!presences.length) return "Aucune présence élections.";
+  return presences.map(formatElectionWhatsAppBlock).join("\n\n────────────\n\n");
+}
+
+async function copyTextToClipboard(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) {
+    console.warn("Clipboard API:", e);
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    return true;
+  } catch (e) {
+    document.body.removeChild(ta);
+    return false;
+  }
+}
+
+function getElectionsForMonth(year, month) {
+  const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
+  return electionsState.presences
+    .filter(p => p.date && p.date.startsWith(prefix))
+    .sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      const mainA = getMainAttachmentLabel(a.mainId);
+      const mainB = getMainAttachmentLabel(b.mainId);
+      if (mainA !== mainB) return mainA.localeCompare(mainB);
+      const subA = getSubAttachmentLabel(a.subId);
+      const subB = getSubAttachmentLabel(b.subId);
+      if (subA !== subB) return subA.localeCompare(subB);
+      return (a.type || "").localeCompare(b.type || "");
+    });
+}
+
+function generateElectionsForDate(date) {
+  let added = 0;
+  ATTACHMENT_HIERARCHY.forEach(row => {
+    const key = electionPresenceKey(date, row.mainId, row.subId, row.slotType);
+    const exists = electionsState.presences.some(p =>
+      electionPresenceKey(p.date, p.mainId, p.subId, p.type) === key
+    );
+    if (!exists) {
+      electionsState.presences.push({
+        id: generateElectionId(),
+        date,
+        mainId: row.mainId,
+        subId: row.subId,
+        type: row.slotType,
+        creneau: row.slotType,
+        agent1Id: "",
+        agent2Id: "",
+        status: "À couvrir",
+        comment: ""
+      });
+      added++;
+    }
+  });
+  if (added > 0) saveElectionsToStorage();
+  return added;
+}
+
+function generateElectionsForMonth(year, month) {
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  let total = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    total += generateElectionsForDate(formatDate(year, month, day));
+  }
+  return total;
+}
+
+function updateElectionsMonthLabel() {
+  const label = document.getElementById("electionsMonthLabel");
+  if (label) {
+    label.textContent = monthNames[electionsState.currentMonth] + " " + electionsState.currentYear;
+  }
+}
+
+function renderElectionsList() {
+  const container = document.getElementById("electionsList");
+  if (!container) return;
+
+  const presences = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+  container.innerHTML = "";
+
+  if (!presences.length) {
+    const empty = document.createElement("p");
+    empty.className = "pk-elections-empty";
+    empty.textContent = "Aucune présence pour ce mois. Utilisez « Générer le mois » ou « + Ajouter ».";
+    container.appendChild(empty);
+    return;
+  }
+
+  const byDate = new Map();
+  presences.forEach(p => {
+    if (!byDate.has(p.date)) byDate.set(p.date, []);
+    byDate.get(p.date).push(p);
+  });
+
+  byDate.forEach((datePresences, date) => {
+    const dateGroup = document.createElement("div");
+    dateGroup.className = "pk-elections-date-group";
+
+    const dateHeader = document.createElement("div");
+    dateHeader.className = "pk-elections-date-header";
+    dateHeader.textContent = formatDateFr(date);
+    dateGroup.appendChild(dateHeader);
+
+    const byMain = new Map();
+    datePresences.forEach(p => {
+      if (!byMain.has(p.mainId)) byMain.set(p.mainId, []);
+      byMain.get(p.mainId).push(p);
+    });
+
+    byMain.forEach((mainPresences, mainId) => {
+      const siteGroup = document.createElement("div");
+      siteGroup.className = "pk-elections-site-group";
+
+      const siteTitle = document.createElement("div");
+      siteTitle.className = "pk-elections-site-title";
+      siteTitle.textContent = getMainAttachmentLabel(mainId);
+      siteGroup.appendChild(siteTitle);
+
+      const bySub = new Map();
+      mainPresences.forEach(p => {
+        if (!bySub.has(p.subId)) bySub.set(p.subId, []);
+        bySub.get(p.subId).push(p);
+      });
+
+      bySub.forEach((subPresences, subId) => {
+        const subTitle = document.createElement("div");
+        subTitle.className = "pk-elections-sub-title";
+        subTitle.textContent = getSubAttachmentLabel(subId);
+        siteGroup.appendChild(subTitle);
+
+        subPresences.forEach(presence => {
+          siteGroup.appendChild(createElectionRow(presence));
+        });
+      });
+
+      dateGroup.appendChild(siteGroup);
+    });
+
+    container.appendChild(dateGroup);
+  });
+}
+
+function createElectionRow(presence) {
+  const row = document.createElement("div");
+  row.className = "pk-elections-row";
+  if (isElectionUncovered(presence)) row.classList.add("pk-elections-row--uncovered");
+
+  const header = document.createElement("div");
+  header.className = "pk-elections-row-header";
+
+  const info = document.createElement("div");
+  const typeEl = document.createElement("div");
+  typeEl.className = "pk-elections-type";
+  typeEl.textContent = `Type : ${getElectionTypeLabel(presence.type)}`;
+
+  const creneauEl = document.createElement("div");
+  creneauEl.className = "pk-elections-creneau";
+  creneauEl.textContent = `Créneau : ${getElectionCreneauLabel(presence.creneau)}`;
+
+  info.appendChild(typeEl);
+  info.appendChild(creneauEl);
+  header.appendChild(info);
+
+  const badge = document.createElement("span");
+  badge.className = `pk-status-badge ${getStatusCssClass(presence.status)}`;
+  badge.textContent = presence.status;
+  header.appendChild(badge);
+  row.appendChild(header);
+
+  const binome = document.createElement("div");
+  binome.className = "pk-elections-binome";
+  if (!presence.agent1Id || !presence.agent2Id) {
+    binome.classList.add("pk-elections-binome--missing");
+    binome.textContent = "Binôme : À couvrir";
+  } else {
+    binome.textContent = `Binôme : ${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
+  }
+  row.appendChild(binome);
+
+  if (presence.comment && presence.comment.trim()) {
+    const comment = document.createElement("div");
+    comment.className = "pk-elections-comment";
+    comment.textContent = presence.comment.trim();
+    row.appendChild(comment);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "pk-elections-row-actions";
+
+  const btnEdit = document.createElement("button");
+  btnEdit.type = "button";
+  btnEdit.className = "pk-btn pk-btn-ghost";
+  btnEdit.textContent = "Modifier";
+  btnEdit.addEventListener("click", () => openElectionFormModal(presence.id));
+
+  const btnDelete = document.createElement("button");
+  btnDelete.type = "button";
+  btnDelete.className = "pk-btn pk-btn-ghost";
+  btnDelete.textContent = "Supprimer";
+  btnDelete.addEventListener("click", () => deleteElectionPresence(presence.id));
+
+  actions.appendChild(btnEdit);
+  actions.appendChild(btnDelete);
+  row.appendChild(actions);
+
+  return row;
+}
+
+function deleteElectionPresence(id) {
+  if (!confirm("Supprimer cette présence élections ?")) return;
+  electionsState.presences = electionsState.presences.filter(p => p.id !== id);
+  saveElectionsToStorage();
+  renderElectionsList();
+}
+
+function fillColleagueSelect(selectEl, includeEmpty) {
+  if (!selectEl) return;
+  selectEl.innerHTML = "";
+  if (includeEmpty) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "— Non assigné —";
+    selectEl.appendChild(opt);
+  }
+  COLLEAGUES.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    selectEl.appendChild(opt);
+  });
+}
+
+function updateElectionFormSubSelect() {
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  if (!mainSelect || !subSelect) return;
+
+  subSelect.innerHTML = "";
+  getSubAttachments(mainSelect.value).forEach(sub => {
+    const opt = document.createElement("option");
+    opt.value = sub.id;
+    opt.textContent = sub.label;
+    subSelect.appendChild(opt);
+  });
+  updateElectionFormTypeSelect();
+}
+
+function updateElectionFormTypeSelect() {
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  const typeSelect = document.getElementById("electionFormType");
+  if (!mainSelect || !subSelect || !typeSelect) return;
+
+  typeSelect.innerHTML = "";
+  getSlotTypes(mainSelect.value, subSelect.value).forEach(type => {
+    const opt = document.createElement("option");
+    opt.value = type;
+    opt.textContent = getElectionTypeLabel(type);
+    typeSelect.appendChild(opt);
+  });
+  updateElectionFormCreneauSelect();
+}
+
+function updateElectionFormCreneauSelect() {
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  const typeSelect = document.getElementById("electionFormType");
+  const creneauSelect = document.getElementById("electionFormCreneau");
+  if (!mainSelect || !subSelect || !typeSelect || !creneauSelect) return;
+
+  creneauSelect.innerHTML = "";
+  const creneaux = getCreneauxForType(mainSelect.value, subSelect.value, typeSelect.value);
+  if (!creneaux.length) {
+    const opt = document.createElement("option");
+    opt.value = typeSelect.value;
+    opt.textContent = getElectionCreneauLabel(typeSelect.value);
+    creneauSelect.appendChild(opt);
+  } else {
+    creneaux.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = getElectionCreneauLabel(c);
+      creneauSelect.appendChild(opt);
+    });
+  }
+}
+
+function openElectionFormModal(editId) {
+  const modal = document.getElementById("electionsFormModal");
+  const title = document.getElementById("electionsFormTitle");
+  if (!modal) return;
+
+  electionsState.editingId = editId || null;
+  const presence = editId
+    ? electionsState.presences.find(p => p.id === editId)
+    : null;
+
+  if (title) {
+    title.textContent = presence ? "Modifier une présence" : "Ajouter une présence";
+  }
+
+  const dateInput = document.getElementById("electionFormDate");
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  const typeSelect = document.getElementById("electionFormType");
+  const creneauSelect = document.getElementById("electionFormCreneau");
+  const agent1 = document.getElementById("electionFormAgent1");
+  const agent2 = document.getElementById("electionFormAgent2");
+  const statusSelect = document.getElementById("electionFormStatus");
+  const commentInput = document.getElementById("electionFormComment");
+
+  if (dateInput) {
+    dateInput.value = presence
+      ? presence.date
+      : formatDate(electionsState.currentYear, electionsState.currentMonth, 1);
+  }
+
+  if (mainSelect) {
+    mainSelect.value = presence ? presence.mainId : mainSelect.options[0]?.value || "";
+  }
+  updateElectionFormSubSelect();
+
+  if (presence) {
+    if (subSelect) subSelect.value = presence.subId;
+    updateElectionFormTypeSelect();
+    if (typeSelect) typeSelect.value = presence.type;
+    updateElectionFormCreneauSelect();
+    if (creneauSelect) creneauSelect.value = presence.creneau;
+    if (agent1) agent1.value = presence.agent1Id || "";
+    if (agent2) agent2.value = presence.agent2Id || "";
+    if (statusSelect) statusSelect.value = presence.status;
+    if (commentInput) commentInput.value = presence.comment || "";
+  } else {
+    if (statusSelect) statusSelect.value = "À couvrir";
+    if (agent1) agent1.value = "";
+    if (agent2) agent2.value = "";
+    if (commentInput) commentInput.value = "";
+  }
+
+  modal.classList.remove("pk-modal-hidden");
+  document.body.classList.add("pk-modal-open");
+}
+
+function closeElectionFormModal() {
+  const modal = document.getElementById("electionsFormModal");
+  if (modal) modal.classList.add("pk-modal-hidden");
+  document.body.classList.remove("pk-modal-open");
+  electionsState.editingId = null;
+}
+
+function saveElectionPresenceFromForm() {
+  const dateInput = document.getElementById("electionFormDate");
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  const typeSelect = document.getElementById("electionFormType");
+  const creneauSelect = document.getElementById("electionFormCreneau");
+  const agent1 = document.getElementById("electionFormAgent1");
+  const agent2 = document.getElementById("electionFormAgent2");
+  const statusSelect = document.getElementById("electionFormStatus");
+  const commentInput = document.getElementById("electionFormComment");
+
+  const date = dateInput?.value;
+  const mainId = mainSelect?.value;
+  const subId = subSelect?.value;
+  const type = typeSelect?.value ?? "";
+  const creneau = creneauSelect?.value ?? type;
+
+  if (!date || !mainId || !subId) {
+    alert("Veuillez remplir la date, le site et le sous-site.");
+    return;
+  }
+
+  const key = electionPresenceKey(date, mainId, subId, type);
+  const duplicate = electionsState.presences.find(p =>
+    electionPresenceKey(p.date, p.mainId, p.subId, p.type) === key &&
+    p.id !== electionsState.editingId
+  );
+  if (duplicate) {
+    alert("Une présence existe déjà pour cette date, ce site, ce sous-site et ce type.");
+    return;
+  }
+
+  const payload = {
+    date,
+    mainId,
+    subId,
+    type,
+    creneau,
+    agent1Id: agent1?.value || "",
+    agent2Id: agent2?.value || "",
+    status: statusSelect?.value || "À couvrir",
+    comment: commentInput?.value?.trim() || ""
+  };
+
+  if (electionsState.editingId) {
+    const idx = electionsState.presences.findIndex(p => p.id === electionsState.editingId);
+    if (idx !== -1) {
+      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
+    }
+  } else {
+    electionsState.presences.push({ id: generateElectionId(), ...payload });
+  }
+
+  saveElectionsToStorage();
+  closeElectionFormModal();
+  renderElectionsList();
+}
+
+function renderElectionsUncoveredModal() {
+  const container = document.getElementById("electionsUncoveredContainer");
+  if (!container) return;
+
+  const uncovered = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth)
+    .filter(isElectionUncovered);
+
+  container.innerHTML = "";
+
+  if (!uncovered.length) {
+    const p = document.createElement("p");
+    p.className = "pk-elections-empty";
+    p.textContent = "Tous les créneaux du mois sont couverts.";
+    container.appendChild(p);
+    return;
+  }
+
+  uncovered.forEach(presence => {
+    container.appendChild(createElectionRow(presence));
+  });
+}
+
+function initElectionsModule() {
+  loadElectionsFromStorage();
+  updateElectionsMonthLabel();
+
+  const mainSelect = document.getElementById("electionFormMainId");
+  const subSelect = document.getElementById("electionFormSubId");
+  const typeSelect = document.getElementById("electionFormType");
+  const statusSelect = document.getElementById("electionFormStatus");
+  const agent1 = document.getElementById("electionFormAgent1");
+  const agent2 = document.getElementById("electionFormAgent2");
+
+  if (mainSelect) {
+    mainSelect.innerHTML = "";
+    getMainAttachments().forEach(main => {
+      const opt = document.createElement("option");
+      opt.value = main.id;
+      opt.textContent = main.label;
+      mainSelect.appendChild(opt);
+    });
+    mainSelect.addEventListener("change", updateElectionFormSubSelect);
+  }
+
+  if (subSelect) {
+    subSelect.addEventListener("change", updateElectionFormTypeSelect);
+  }
+
+  if (typeSelect) {
+    typeSelect.addEventListener("change", updateElectionFormCreneauSelect);
+  }
+
+  if (statusSelect) {
+    statusSelect.innerHTML = "";
+    ELECTION_STATUSES.forEach(s => {
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      statusSelect.appendChild(opt);
+    });
+  }
+
+  fillColleagueSelect(agent1, true);
+  fillColleagueSelect(agent2, true);
+
+  document.getElementById("electionsPrevMonth")?.addEventListener("click", () => {
+    electionsState.currentMonth--;
+    if (electionsState.currentMonth < 0) {
+      electionsState.currentMonth = 11;
+      electionsState.currentYear--;
+    }
+    updateElectionsMonthLabel();
+    renderElectionsList();
+  });
+
+  document.getElementById("electionsNextMonth")?.addEventListener("click", () => {
+    electionsState.currentMonth++;
+    if (electionsState.currentMonth > 11) {
+      electionsState.currentMonth = 0;
+      electionsState.currentYear++;
+    }
+    updateElectionsMonthLabel();
+    renderElectionsList();
+  });
+
+  document.getElementById("electionsGenerateMonthBtn")?.addEventListener("click", () => {
+    const monthLabel = monthNames[electionsState.currentMonth] + " " + electionsState.currentYear;
+    if (!confirm(`Générer tous les créneaux possibles pour ${monthLabel} ?\n(Les présences existantes ne seront pas dupliquées.)`)) return;
+    const added = generateElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+    renderElectionsList();
+    alert(added > 0 ? `${added} présence(s) ajoutée(s).` : "Tous les créneaux existent déjà pour ce mois.");
+  });
+
+  document.getElementById("electionsAddBtn")?.addEventListener("click", () => openElectionFormModal(null));
+
+  document.getElementById("saveElectionPresence")?.addEventListener("click", saveElectionPresenceFromForm);
+  document.getElementById("cancelElectionPresence")?.addEventListener("click", closeElectionFormModal);
+  document.getElementById("closeElectionsFormModal")?.addEventListener("click", closeElectionFormModal);
+
+  document.getElementById("electionsUncoveredBtn")?.addEventListener("click", () => {
+    renderElectionsUncoveredModal();
+    document.getElementById("electionsUncoveredModal")?.classList.remove("pk-modal-hidden");
+    document.body.classList.add("pk-modal-open");
+  });
+
+  document.getElementById("closeElectionsUncoveredModal")?.addEventListener("click", () => {
+    document.getElementById("electionsUncoveredModal")?.classList.add("pk-modal-hidden");
+    document.body.classList.remove("pk-modal-open");
+  });
+
+  document.getElementById("electionsCopyBtn")?.addEventListener("click", async () => {
+    const presences = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+    const text = formatElectionsWhatsApp(presences);
+    const ok = await copyTextToClipboard(text);
+    alert(ok ? "Planning élections copié dans le presse-papiers." : "Copie impossible. Sélectionnez le texte manuellement.");
+  });
+
+  document.getElementById("electionsCopyUncoveredBtn")?.addEventListener("click", async () => {
+    const uncovered = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth)
+      .filter(isElectionUncovered);
+    const text = formatElectionsWhatsApp(uncovered);
+    const ok = await copyTextToClipboard(text);
+    alert(ok ? "Créneaux non couverts copiés." : "Copie impossible.");
+  });
+
+  renderElectionsList();
+}
+
+function initModuleTabs() {
+  const tabHis = document.getElementById("tabHis");
+  const tabElections = document.getElementById("tabElections");
+  const hisModule = document.getElementById("hisModule");
+  const electionsModule = document.getElementById("electionsModule");
+  const hisFooter = document.getElementById("hisFooter");
+  const electionsFooter = document.getElementById("electionsFooter");
+  const hisHeaderFilters = document.getElementById("hisHeaderFilters");
+  const electionsHeaderFilters = document.getElementById("electionsHeaderFilters");
+
+  function showModule(module) {
+    const isHis = module === "his";
+
+    tabHis?.classList.toggle("pk-tab--active", isHis);
+    tabElections?.classList.toggle("pk-tab--active", !isHis);
+
+    hisModule?.classList.toggle("pk-module-hidden", !isHis);
+    electionsModule?.classList.toggle("pk-module-hidden", isHis);
+    hisFooter?.classList.toggle("pk-module-hidden", !isHis);
+    electionsFooter?.classList.toggle("pk-module-hidden", isHis);
+    hisHeaderFilters?.classList.toggle("pk-module-hidden", !isHis);
+    electionsHeaderFilters?.classList.toggle("pk-module-hidden", isHis);
+
+    if (!isHis) {
+      updateElectionsMonthLabel();
+      renderElectionsList();
+    }
+  }
+
+  tabHis?.addEventListener("click", () => showModule("his"));
+  tabElections?.addEventListener("click", () => showModule("elections"));
 }
   
