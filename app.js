@@ -2322,7 +2322,11 @@ function renderElectionsList() {
 function createElectionRow(presence) {
   const row = document.createElement("div");
   row.className = "pk-elections-row";
-  if (isElectionUncovered(presence)) row.classList.add("pk-elections-row--uncovered");
+  if (presence.status === "Fait") {
+    row.classList.add("pk-elections-row--done");
+  } else if (isElectionUncovered(presence)) {
+    row.classList.add("pk-elections-row--uncovered");
+  }
 
   const header = document.createElement("div");
   header.className = "pk-elections-row-header";
