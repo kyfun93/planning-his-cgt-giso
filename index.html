@@ -38,13 +38,7 @@
         <button id="nextMonth" class="pk-btn pk-btn-ghost">▶</button>
       </div>
     </div>
-    <div id="electionsHeaderFilters" class="pk-header-filters pk-module-hidden">
-      <div class="pk-month-nav">
-        <button id="electionsPrevMonth" type="button" class="pk-btn pk-btn-ghost">◀</button>
-        <span id="electionsMonthLabel"></span>
-        <button id="electionsNextMonth" type="button" class="pk-btn pk-btn-ghost">▶</button>
-      </div>
-    </div>
+    <div id="electionsHeaderFilters" class="pk-header-filters pk-module-hidden"></div>
   </header>
 
   <main id="hisModule" class="pk-main">
@@ -61,16 +55,16 @@
 
   <main id="electionsModule" class="pk-main pk-module-hidden">
     <section class="pk-panel">
-      <div class="pk-panel-header">
+      <div class="pk-panel-header pk-panel-header--elections">
         <div>
-          <h2 class="pk-panel-title">Présences élections</h2>
+          <h2 class="pk-panel-title">Planning élections</h2>
           <p id="electionsPeriodLabel" class="pk-elections-period-label"></p>
         </div>
-        <div class="pk-panel-actions">
-          <button id="electionsGeneratePeriodBtn" type="button" class="pk-btn pk-btn-ghost">⚡ Générer 19-23 oct.</button>
-          <button id="electionsAddBtn" type="button" class="pk-btn pk-btn-add-slot">+ Ajouter</button>
-        </div>
       </div>
+      <div id="electionsDateTabs" class="pk-elections-date-tabs" role="tablist" aria-label="Jours d'élections">
+        <!-- rempli par JS -->
+      </div>
+      <p id="electionsDaySummary" class="pk-elections-day-summary"></p>
       <div id="electionsList" class="pk-elections-list">
         <!-- rempli par JS -->
       </div>
@@ -115,20 +109,16 @@
             <input type="date" id="electionFormDate" class="pk-select pk-form-input" required>
           </div>
           <div class="pk-form-group">
-            <label for="electionFormMainId" class="pk-form-label">Site :</label>
+            <label for="electionFormMainId" class="pk-form-label">Site (A) :</label>
             <select id="electionFormMainId" class="pk-select pk-form-input" required></select>
           </div>
           <div class="pk-form-group">
-            <label for="electionFormSubId" class="pk-form-label">Sous-site :</label>
+            <label for="electionFormSubId" class="pk-form-label">Sous-site (B) :</label>
             <select id="electionFormSubId" class="pk-select pk-form-input" required></select>
           </div>
           <div class="pk-form-group">
-            <label for="electionFormType" class="pk-form-label">Type :</label>
+            <label for="electionFormType" class="pk-form-label">Type (C) :</label>
             <select id="electionFormType" class="pk-select pk-form-input" required></select>
-          </div>
-          <div class="pk-form-group">
-            <label for="electionFormCreneau" class="pk-form-label">Créneau :</label>
-            <select id="electionFormCreneau" class="pk-select pk-form-input" required></select>
           </div>
           <div class="pk-form-group">
             <label for="electionFormAgent1" class="pk-form-label">Agent 1 :</label>
