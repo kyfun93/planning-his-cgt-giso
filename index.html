@@ -83,7 +83,8 @@
   </footer>
 
   <footer id="electionsFooter" class="pk-footer pk-module-hidden">
-    <div class="pk-footer-grid">
+    <div class="pk-footer-grid pk-footer-grid--elections">
+      <button id="electionsPlanningBtn" type="button" class="pk-btn pk-btn-footer">📅 Planning</button>
       <button id="electionsUncoveredBtn" type="button" class="pk-btn pk-btn-footer">⚠️ Non couverts</button>
       <button id="electionsCopyBtn" type="button" class="pk-btn pk-btn-footer">📋 Copier planning</button>
       <button id="electionsCopyUncoveredBtn" type="button" class="pk-btn pk-btn-footer pk-btn-footer-split">
@@ -92,6 +93,19 @@
       </button>
     </div>
   </footer>
+
+  <!-- Modale planning élections (créneaux attribués) -->
+  <div id="electionsPlanningModal" class="pk-modal pk-modal-hidden">
+    <div class="pk-modal-content pk-modal-scrollable">
+      <div class="pk-modal-header">
+        <h2>Planning — créneaux attribués</h2>
+        <button id="closeElectionsPlanningModal" type="button" class="pk-btn pk-btn-ghost">✕</button>
+      </div>
+      <div id="electionsPlanningContainer" class="pk-elections-planning-list">
+        <!-- rempli par JS -->
+      </div>
+    </div>
+  </div>
 
   <!-- Modale présence élections (ajout / modification) -->
   <div id="electionsFormModal" class="pk-modal pk-modal-hidden">

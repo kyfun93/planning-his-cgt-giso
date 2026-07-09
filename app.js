@@ -2703,6 +2703,84 @@ function saveElectionPresenceFromForm() {
   renderElectionsUI();
 }
 
+function createElectionPlanningRow(presence) {
+  const row = document.createElement("div");
+  row.className = "pk-elections-planning-row";
+  if (isElectionDone(presence)) row.classList.add("pk-elections-planning-row--done");
+
+  const creneau = document.createElement("div");
+  creneau.className = "pk-elections-planning-creneau";
+  creneau.textContent = formatMainSubSlot(presence.mainId, presence.subId, presence.type);
+
+  const binome = document.createElement("div");
+  binome.className = "pk-elections-planning-binome";
+  binome.textContent = `${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
+
+  const meta = document.createElement("div");
+  meta.className = "pk-elections-planning-meta";
+
+  const badge = document.createElement("span");
+  badge.className = `pk-status-badge ${getStatusCssClass(presence.status)}`;
+  badge.textContent = presence.status;
+  meta.appendChild(badge);
+
+  const btnEdit = document.createElement("button");
+  btnEdit.type = "button";
+  btnEdit.className = "pk-btn pk-btn-ghost";
+  btnEdit.textContent = "Modifier";
+  btnEdit.addEventListener("click", () => {
+    document.getElementById("electionsPlanningModal")?.classList.add("pk-modal-hidden");
+    document.body.classList.remove("pk-modal-open");
+    openElectionFormModal(presence.id);
+  });
+  meta.appendChild(btnEdit);
+
+  row.appendChild(creneau);
+  row.appendChild(binome);
+  if (presence.comment && presence.comment.trim()) {
+    const comment = document.createElement("div");
+    comment.className = "pk-elections-planning-comment";
+    comment.textContent = presence.comment.trim();
+    row.appendChild(comment);
+  }
+  row.appendChild(meta);
+
+  return row;
+}
+
+function renderElectionsPlanningModal() {
+  const container = document.getElementById("electionsPlanningContainer");
+  if (!container) return;
+
+  const chosen = getElectionPeriodPresences().filter(isElectionChosen);
+  container.innerHTML = "";
+
+  if (!chosen.length) {
+    const p = document.createElement("p");
+    p.className = "pk-elections-empty";
+    p.textContent = "Aucun créneau attribué pour le moment.";
+    container.appendChild(p);
+    return;
+  }
+
+  const byDate = new Map();
+  chosen.forEach(p => {
+    if (!byDate.has(p.date)) byDate.set(p.date, []);
+    byDate.get(p.date).push(p);
+  });
+
+  byDate.forEach((datePresences, date) => {
+    const dateHeader = document.createElement("div");
+    dateHeader.className = "pk-elections-date-header";
+    dateHeader.textContent = `${formatDateFr(date)} (${datePresences.length})`;
+    container.appendChild(dateHeader);
+
+    datePresences.forEach(presence => {
+      container.appendChild(createElectionPlanningRow(presence));
+    });
+  });
+}
+
 function renderElectionsUncoveredModal() {
   const container = document.getElementById("electionsUncoveredContainer");
   if (!container) return;
@@ -2781,6 +2859,17 @@ function initElectionsModule() {
   document.getElementById("saveElectionPresence")?.addEventListener("click", saveElectionPresenceFromForm);
   document.getElementById("cancelElectionPresence")?.addEventListener("click", closeElectionFormModal);
   document.getElementById("closeElectionsFormModal")?.addEventListener("click", closeElectionFormModal);
+
+  document.getElementById("electionsPlanningBtn")?.addEventListener("click", () => {
+    renderElectionsPlanningModal();
+    document.getElementById("electionsPlanningModal")?.classList.remove("pk-modal-hidden");
+    document.body.classList.add("pk-modal-open");
+  });
+
+  document.getElementById("closeElectionsPlanningModal")?.addEventListener("click", () => {
+    document.getElementById("electionsPlanningModal")?.classList.add("pk-modal-hidden");
+    document.body.classList.remove("pk-modal-open");
+  });
 
   document.getElementById("electionsUncoveredBtn")?.addEventListener("click", () => {
     renderElectionsUncoveredModal();

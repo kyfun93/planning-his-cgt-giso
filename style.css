@@ -1690,6 +1690,68 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .pk-elections-planning-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pk-elections-planning-row {
+    margin: 0 0.5rem 0.5rem;
+    padding: 0.75rem;
+    border-radius: calc(var(--radius) - 2px);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    background: rgba(0, 229, 255, 0.06);
+  }
+
+  .pk-elections-planning-row--done {
+    opacity: 0.55;
+    background: rgba(58, 58, 58, 0.35);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .pk-elections-planning-creneau {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--border-neon);
+    margin-bottom: 0.35rem;
+  }
+
+  .pk-elections-planning-binome {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .pk-elections-planning-comment {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 0.4rem;
+  }
+
+  .pk-elections-planning-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .pk-elections-planning-meta .pk-btn {
+    font-size: 0.78rem;
+    padding: 0.35rem 0.6rem;
+    min-height: 36px;
+  }
+
+  .pk-footer-grid--elections {
+    max-width: 520px;
+  }
+
   @media (max-width: 480px) {
     .pk-header-top {
       flex-direction: column;
