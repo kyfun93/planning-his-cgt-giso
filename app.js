@@ -525,10 +525,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSupabase();
   }
   
-  initHisFilters();
+  initSteps();
   initColleagueSelect();
-    initMonthNav();
-    initModal();
+  initMonthNav();
+  initModal();
   initAddSlotModal();
   initInactiveSlotsModal();
   initTopModal();
@@ -537,9 +537,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   initElectionsModule();
   initModuleTabs();
   await refreshData();
-  
-  
-    renderCalendar();
+
+  renderCalendar();
   console.log("✅ Initialisation terminée");
 });
 
@@ -552,115 +551,143 @@ async function refreshData() {
   state.registrations = await loadRegistrations();
 }
 
-// --- Filtres HIS (Site / Sous-site / Type) ---
+// --- Menu déroulant hiérarchique compact ---
 
-function fillSelectOptions(selectEl, options, selectedValue) {
-  if (!selectEl) return;
-  selectEl.innerHTML = "";
-  options.forEach(({ value, label }) => {
-    const opt = document.createElement("option");
-    opt.value = value;
-    opt.textContent = label;
-    selectEl.appendChild(opt);
+function initSteps() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+
+  if (!dropdownMenu) return;
+
+  dropdownMenu.innerHTML = "";
+  // Le menu reste caché par défaut
+
+  // Créer le menu hiérarchique
+  getMainAttachments().forEach(main => {
+    const mainItem = document.createElement("div");
+    mainItem.className = "pk-dropdown-item pk-dropdown-main";
+
+    const mainLink = document.createElement("a");
+    mainLink.href = "#";
+    mainLink.textContent = main.label;
+    mainLink.className = "pk-dropdown-link";
+    mainLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleSubmenu(mainItem, main.id);
+    });
+
+    const subMenu = document.createElement("div");
+    subMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
+    subMenu.dataset.mainId = main.id;
+
+    // Créer les sous-éléments (B)
+    const subAttachments = getSubAttachments(main.id);
+    subAttachments.forEach(sub => {
+      const subItem = document.createElement("div");
+      subItem.className = "pk-dropdown-item pk-dropdown-sub";
+
+      const subLink = document.createElement("a");
+      subLink.href = "#";
+      subLink.textContent = sub.label;
+      subLink.className = "pk-dropdown-link";
+      subLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        toggleSlotMenu(subItem, main.id, sub.id);
+      });
+
+      const slotMenu = document.createElement("div");
+      slotMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
+      slotMenu.dataset.mainId = main.id;
+      slotMenu.dataset.subId = sub.id;
+
+      // Créer les types de slots (C)
+      const slotTypes = getSlotTypes(main.id, sub.id);
+      slotTypes.forEach(slotType => {
+        const slotItem = document.createElement("div");
+        slotItem.className = "pk-dropdown-item pk-dropdown-slot";
+
+        const slotLink = document.createElement("a");
+        slotLink.href = "#";
+        slotLink.textContent = slotType || "(sans type)";
+        slotLink.className = "pk-dropdown-link";
+        slotLink.addEventListener("click", async (e) => {
+          e.preventDefault();
+          // Valider la sélection
+          state.selectedMainId = main.id;
+          state.selectedSubId = sub.id;
+          state.selectedSlotType = slotType;
+
+          // Fermer le menu
+          closeDropdown();
+
+          // Recharger les données et afficher le calendrier
+          await refreshData();
+          renderCalendar();
+        });
+
+        slotItem.appendChild(slotLink);
+        slotMenu.appendChild(slotItem);
+      });
+
+      subItem.appendChild(subLink);
+      subItem.appendChild(slotMenu);
+      subMenu.appendChild(subItem);
+    });
+
+    mainItem.appendChild(mainLink);
+    mainItem.appendChild(subMenu);
+    dropdownMenu.appendChild(mainItem);
   });
-  if (options.some(opt => opt.value === selectedValue)) {
-    selectEl.value = selectedValue;
-  }
-}
 
-function populateHisSubFilter() {
-  const subSelect = document.getElementById("filterSubId");
-  const typeSelect = document.getElementById("filterSlotType");
-  if (!subSelect || !typeSelect) return;
-
-  if (state.selectedMainId === "all") {
-    fillSelectOptions(subSelect, [{ value: "all", label: "Tous les sous-sites" }], "all");
-    fillSelectOptions(typeSelect, [{ value: "all", label: "Tous les types" }], "all");
-    subSelect.disabled = true;
-    typeSelect.disabled = true;
-    state.selectedSubId = "all";
-    state.selectedSlotType = "all";
-    return;
-  }
-
-  const subs = getSubAttachments(state.selectedMainId).map(sub => ({
-    value: sub.id,
-    label: sub.label
-  }));
-  fillSelectOptions(subSelect, subs, state.selectedSubId);
-  subSelect.disabled = false;
-
-  if (!subs.some(sub => sub.value === state.selectedSubId)) {
-    state.selectedSubId = subs[0]?.value || "";
-    subSelect.value = state.selectedSubId;
-  }
-
-  populateHisTypeFilter();
-}
-
-function populateHisTypeFilter() {
-  const typeSelect = document.getElementById("filterSlotType");
-  if (!typeSelect) return;
-
-  if (state.selectedMainId === "all" || !state.selectedSubId) {
-    fillSelectOptions(typeSelect, [{ value: "all", label: "Tous les types" }], "all");
-    typeSelect.disabled = true;
-    state.selectedSlotType = "all";
-    return;
-  }
-
-  const types = getSlotTypes(state.selectedMainId, state.selectedSubId).map(type => ({
-    value: type,
-    label: type || "(sans type)"
-  }));
-  fillSelectOptions(typeSelect, types, state.selectedSlotType);
-  typeSelect.disabled = false;
-
-  if (!types.some(type => type.value === state.selectedSlotType)) {
-    state.selectedSlotType = types[0]?.value ?? "";
-    typeSelect.value = state.selectedSlotType;
-  }
-}
-
-async function applyHisFilters() {
-  await refreshData();
-  renderCalendar();
-}
-
-function initHisFilters() {
-  const mainSelect = document.getElementById("filterMainId");
-  const subSelect = document.getElementById("filterSubId");
-  const typeSelect = document.getElementById("filterSlotType");
-  if (!mainSelect || !subSelect || !typeSelect) return;
-
-  const mains = [
-    { value: "all", label: "Tous les sites" },
-    ...getMainAttachments().map(main => ({ value: main.id, label: main.label }))
-  ];
-  fillSelectOptions(mainSelect, mains, state.selectedMainId || "all");
-
-  populateHisSubFilter();
-
-  mainSelect.addEventListener("change", async () => {
-    state.selectedMainId = mainSelect.value;
-    if (state.selectedMainId === "all") {
-      state.selectedSubId = "all";
-      state.selectedSlotType = "all";
+  // Fermer le menu si on clique ailleurs
+  document.addEventListener("click", (e) => {
+    if (!dropdownMenu.contains(e.target)) {
+      closeDropdown();
     }
-    populateHisSubFilter();
-    await applyHisFilters();
+  });
+}
+
+function toggleDropdown() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  if (dropdownMenu) {
+    dropdownMenu.classList.toggle("pk-dropdown-hidden");
+  }
+}
+
+function closeDropdown() {
+  const dropdownMenu = document.getElementById("dropdownMenu");
+  if (dropdownMenu) {
+    dropdownMenu.classList.add("pk-dropdown-hidden");
+    // Fermer tous les sous-menus
+    document.querySelectorAll(".pk-dropdown-submenu").forEach(menu => {
+      menu.classList.add("pk-dropdown-hidden");
+    });
+  }
+}
+
+function toggleSubmenu(mainItem, mainId) {
+  const subMenu = mainItem.querySelector(".pk-dropdown-submenu");
+  if (!subMenu) return;
+
+  document.querySelectorAll(".pk-dropdown-submenu[data-main-id]").forEach(menu => {
+    if (menu !== subMenu) {
+      menu.classList.add("pk-dropdown-hidden");
+    }
   });
 
-  subSelect.addEventListener("change", async () => {
-    state.selectedSubId = subSelect.value;
-    populateHisTypeFilter();
-    await applyHisFilters();
+  subMenu.classList.toggle("pk-dropdown-hidden");
+}
+
+function toggleSlotMenu(subItem, mainId, subId) {
+  const slotMenu = subItem.querySelector(".pk-dropdown-submenu");
+  if (!slotMenu) return;
+
+  document.querySelectorAll(".pk-dropdown-submenu[data-sub-id]").forEach(menu => {
+    if (menu !== slotMenu) {
+      menu.classList.add("pk-dropdown-hidden");
+    }
   });
 
-  typeSelect.addEventListener("change", async () => {
-    state.selectedSlotType = typeSelect.value;
-    await applyHisFilters();
-  });
+  slotMenu.classList.toggle("pk-dropdown-hidden");
 }
 
 // --- Sélecteur collègues ---
@@ -867,36 +894,32 @@ function initColleagueSelect() {
     });
   }
 
-// === Inactifs 2 mois ===
+// === Inactifs 1 mois ===
 
-// Charge les combinaisons (main_id, sub_id, slot_type) dont le dernier HIS < J-60
-async function loadInactiveCombinationsLast2Months() {
+const INACTIVE_COMBO_THRESHOLD_DAYS = 30;
+
+// Charge les combinaisons (main_id, sub_id, slot_type) sans HIS depuis plus d'un mois
+async function loadInactiveCombinationsLastMonth() {
   if (!supabaseClient) {
-    console.warn("⚠️ Supabase non configuré pour loadInactiveCombinationsLast2Months");
+    console.warn("⚠️ Supabase non configuré pour loadInactiveCombinationsLastMonth");
     return [];
   }
   try {
-    // Baseline remise à aujourd'hui : on considère qu'aucune combinaison n'est en retard
-    console.log("⏱️ Baseline activité réinitialisée à aujourd'hui: aucune combinaison inactive retournée.");
-    return [];
-    
     const today = new Date();
     const threshold = new Date(today);
-    threshold.setDate(threshold.getDate() - 60);
+    threshold.setDate(threshold.getDate() - INACTIVE_COMBO_THRESHOLD_DAYS);
     const thresholdStr = formatDateForDB(threshold);
-    
-    // Récupérer toutes les dates, triées décroissant, puis réduire côté JS
+
     const { data, error } = await supabaseClient
       .from("his_slots")
       .select("main_id, sub_id, slot_type, date")
       .order("date", { ascending: false });
-    
+
     if (error) {
       console.error("❌ Erreur agrégat inactifs:", error);
       return [];
     }
 
-    // Réduire pour obtenir la dernière date par combinaison
     const lastByCombo = new Map();
     (data || []).forEach(row => {
       const key = `${row.main_id}||${row.sub_id}||${row.slot_type}`;
@@ -906,34 +929,29 @@ async function loadInactiveCombinationsLast2Months() {
     });
 
     const inactive = Array.from(lastByCombo.entries())
-      .filter(([, lastDate]) => {
-        const last = new Date(lastDate);
-        return isFinite(last.getTime()) && last < threshold;
-      })
+      .filter(([, lastDate]) => lastDate < thresholdStr)
       .map(([key, lastDate]) => {
         const [mainId, subId, slotType] = key.split("||");
         return { mainId, subId, slotType, lastDate };
       });
-    
-    // Optionnel: détecter les combinaisons jamais planifiées à partir de la config
-    try {
-      const existingKeySet = new Set(Array.from(lastByCombo.keys()));
-      ATTACHMENT_HIERARCHY.forEach(item => {
-        const key = `${item.mainId}||${item.subId}||${item.slotType}`;
-        if (!existingKeySet.has(key)) {
-          inactive.push({
-            mainId: item.mainId,
-            subId: item.subId,
-            slotType: item.slotType,
-            lastDate: null // jamais planifié
-          });
-        }
-      });
-    } catch (e) {
-      console.warn("⚠️ Détection 'jamais planifié' ignorée:", e);
-    }
-    
-    console.log(`📊 Inactifs (2 mois) – total: ${inactive.length}`);
+
+    const existingKeySet = new Set(Array.from(lastByCombo.keys()));
+    ATTACHMENT_HIERARCHY.forEach(item => {
+      const key = `${item.mainId}||${item.subId}||${item.slotType}`;
+      if (!existingKeySet.has(key)) {
+        inactive.push({
+          mainId: item.mainId,
+          subId: item.subId,
+          slotType: item.slotType,
+          lastDate: null
+        });
+      }
+    });
+
+    inactive.sort((a, b) => formatMainSubSlot(a.mainId, a.subId, a.slotType)
+      .localeCompare(formatMainSubSlot(b.mainId, b.subId, b.slotType), "fr"));
+
+    console.log(`📊 Inactifs (1 mois, seuil < ${thresholdStr}) – total: ${inactive.length}`);
     return inactive;
   } catch (e) {
     console.error("❌ Exception inactifs:", e);
@@ -999,13 +1017,13 @@ async function openInactiveSlotsModal() {
   if (!modal || !container) return;
   
   container.innerHTML = "";
-  let list = await loadInactiveCombinationsLast2Months();
+  let list = await loadInactiveCombinationsLastMonth();
   console.log("🪟 Ouverture modale inactifs. Combinaisons à afficher:", list ? list.length : 0);
   
   if (!list || list.length === 0) {
     const p = document.createElement("p");
     p.className = "pk-inactive-ok";
-    p.textContent = "✅ Toutes les combinaisons ont au moins un HIS sur les 2 derniers mois.";
+    p.textContent = "✅ Toutes les combinaisons ont au moins un HIS sur le dernier mois.";
     container.appendChild(p);
   } else {
     list.forEach(entry => {

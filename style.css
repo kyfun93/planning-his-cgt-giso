@@ -1183,7 +1183,7 @@
     }
   }
   
-  /* Liste des combinaisons inactives (2 mois) */
+  /* Liste des combinaisons inactives (1 mois) */
   .pk-inactive-slots-list {
     display: flex;
     flex-direction: column;

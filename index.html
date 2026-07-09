@@ -22,15 +22,12 @@
       </nav>
     </div>
     <div id="hisHeaderFilters" class="pk-header-filters">
-      <select id="filterMainId" class="pk-select" aria-label="Site">
-        <!-- rempli par JS -->
-      </select>
-      <select id="filterSubId" class="pk-select" aria-label="Sous-site">
-        <!-- rempli par JS -->
-      </select>
-      <select id="filterSlotType" class="pk-select" aria-label="Type">
-        <!-- rempli par JS -->
-      </select>
+      <!-- Menu de sélection hiérarchique compact -->
+      <div class="pk-dropdown-menu">
+        <div id="dropdownMenu" class="pk-dropdown-content pk-dropdown-hidden">
+          <!-- rempli par JS -->
+        </div>
+      </div>
       <select id="colleagueSelect" class="pk-select">
         <!-- rempli par JS -->
       </select>
@@ -79,7 +76,7 @@
       <button id="showHistoryBtn" class="pk-btn pk-btn-footer">📋 Historique</button>
       <button id="showInactiveSlotsBtn" class="pk-btn pk-btn-footer pk-btn-footer-split">
         <span>Créneaux non planifiés</span>
-        <span class="pk-btn-footer-sub">(2 mois)</span>
+        <span class="pk-btn-footer-sub">(1 mois)</span>
       </button>
       <button id="showTopBtn" class="pk-btn pk-btn-footer">🏆 Top HIS</button>
     </div>
@@ -218,7 +215,7 @@
   <div id="inactiveSlotsModal" class="pk-modal pk-modal-hidden">
     <div class="pk-modal-content pk-modal-scrollable">
       <div class="pk-modal-header">
-        <h2>Combinaisons sans HIS sur les 2 derniers mois</h2>
+        <h2>Combinaisons sans HIS sur le dernier mois</h2>
         <button id="closeInactiveSlotsModal" class="pk-btn pk-btn-ghost">✕</button>
       </div>
       <div id="inactiveSlotsContainer" class="pk-inactive-slots-list">
