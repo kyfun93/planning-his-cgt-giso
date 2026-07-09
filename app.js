@@ -2498,7 +2498,7 @@ function openElectionFormModal(editId) {
   if (title) {
     title.textContent = presence
       ? `Modifier — ${formatMainSubSlot(presence.mainId, presence.subId, presence.type)}`
-      : "Ajouter un créneau";
+      : "Assigner un créneau";
   }
 
   const dateInput = document.getElementById("electionFormDate");
@@ -2571,14 +2571,9 @@ function saveElectionPresenceFromForm() {
   }
 
   const key = electionPresenceKey(date, mainId, subId, type);
-  const duplicate = electionsState.presences.find(p =>
-    electionPresenceKey(p.date, p.mainId, p.subId, p.type) === key &&
-    p.id !== electionsState.editingId
+  const existing = electionsState.presences.find(p =>
+    electionPresenceKey(p.date, p.mainId, p.subId, p.type) === key
   );
-  if (duplicate) {
-    alert("Une présence existe déjà pour cette date, ce site, ce sous-site et ce type.");
-    return;
-  }
 
   const payload = {
     date,
@@ -2596,7 +2591,17 @@ function saveElectionPresenceFromForm() {
     payload.status = "Binôme prévu";
   }
 
-  if (electionsState.editingId) {
+  if (existing && electionsState.editingId && existing.id !== electionsState.editingId) {
+    alert("Une présence existe déjà pour cette date, ce site, ce sous-site et ce type.");
+    return;
+  }
+
+  if (existing) {
+    const idx = electionsState.presences.findIndex(p => p.id === existing.id);
+    if (idx !== -1) {
+      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
+    }
+  } else if (electionsState.editingId) {
     const idx = electionsState.presences.findIndex(p => p.id === electionsState.editingId);
     if (idx !== -1) {
       electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
