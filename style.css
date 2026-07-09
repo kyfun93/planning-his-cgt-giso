@@ -1476,66 +1476,35 @@
     font-weight: 600;
   }
 
-  .pk-elections-date-tabs {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.4rem;
-    padding: 0.75rem 0.75rem 0.25rem;
-  }
-
-  .pk-elections-date-tab {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-    padding: 0.55rem 0.25rem;
-    border-radius: var(--radius);
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    background: var(--bg-panel-alt);
-    color: var(--text-main);
-    cursor: pointer;
-    min-height: 52px;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  }
-
-  .pk-elections-date-tab--active {
-    border-color: var(--border-neon);
-    box-shadow: var(--shadow-neon);
-    background: rgba(0, 229, 255, 0.12);
-  }
-
-  .pk-elections-date-tab--needs {
-    border-color: rgba(255, 107, 107, 0.55);
-    background: rgba(255, 107, 107, 0.1);
-  }
-
-  .pk-elections-date-tab-day {
-    font-size: 0.82rem;
-    font-weight: 700;
-  }
-
-  .pk-elections-date-tab-meta {
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    text-align: center;
-    line-height: 1.2;
-  }
-
-  .pk-elections-date-tab--needs .pk-elections-date-tab-meta {
-    color: #ff9b9b;
-    font-weight: 600;
-  }
-
-  .pk-elections-day-summary {
+  .pk-elections-period-summary {
     margin: 0;
     padding: 0.5rem 0.75rem 0.75rem;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
+    border-bottom: 1px solid rgba(0, 229, 255, 0.15);
   }
 
-  .pk-elections-day-summary--alert {
+  .pk-elections-period-summary--alert {
     color: #ff9b9b;
     font-weight: 600;
+  }
+
+  .pk-elections-date-block {
+    margin: 0 0.75rem 1rem;
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: rgba(14, 16, 24, 0.5);
+  }
+
+  .pk-elections-date-block-title {
+    margin: 0;
+    padding: 0.7rem 0.85rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--border-neon);
+    background: var(--bg-panel-alt);
+    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
   }
 
   .pk-elections-section-title {
@@ -1543,16 +1512,19 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    padding: 0.5rem 0.75rem 0.25rem;
-    margin-top: 0.25rem;
+    padding: 0.55rem 0.85rem 0.25rem;
+    margin-top: 0.15rem;
   }
 
   .pk-elections-section-title--available {
-    color: #ff9b9b;
+    color: #7eefff;
   }
 
-  .pk-elections-section-title--done {
+  .pk-elections-section-title--chosen {
     color: var(--text-muted);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
   }
 
   .pk-elections-date-header {
@@ -1570,7 +1542,7 @@
     flex-direction: column;
     gap: 0.35rem;
     padding: 0.7rem 0.75rem;
-    margin: 0.35rem 0.75rem;
+    margin: 0.35rem 0.85rem;
     background: rgba(14, 16, 24, 0.7);
     border-radius: calc(var(--radius) - 2px);
     border: 1px solid rgba(255, 255, 255, 0.06);
@@ -1580,6 +1552,11 @@
     border-color: rgba(0, 229, 255, 0.65);
     background: rgba(0, 229, 255, 0.1);
     box-shadow: 0 0 14px rgba(0, 229, 255, 0.15);
+  }
+
+  .pk-elections-row--chosen {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(14, 16, 24, 0.55);
   }
 
   .pk-elections-row--planned {
@@ -1722,21 +1699,7 @@
       padding: 0.4rem 0.35rem;
     }
 
-    .pk-elections-date-tabs {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .pk-elections-date-tabs .pk-elections-date-tab:nth-child(4),
-    .pk-elections-date-tabs .pk-elections-date-tab:nth-child(5) {
-      grid-column: span 1;
-    }
-
-    .pk-panel-actions {
-      width: 100%;
-    }
-
-    .pk-panel-actions .pk-btn {
-      flex: 1;
-      font-size: 0.8rem;
+    .pk-elections-list {
+      max-height: calc(100vh - 240px);
     }
   }
