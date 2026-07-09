@@ -22,12 +22,15 @@
       </nav>
     </div>
     <div id="hisHeaderFilters" class="pk-header-filters">
-      <!-- Menu de sélection hiérarchique compact -->
-      <div class="pk-dropdown-menu">
-        <div id="dropdownMenu" class="pk-dropdown-content pk-dropdown-hidden">
-          <!-- rempli par JS -->
-        </div>
-      </div>
+      <select id="filterMainId" class="pk-select" aria-label="Site">
+        <!-- rempli par JS -->
+      </select>
+      <select id="filterSubId" class="pk-select" aria-label="Sous-site">
+        <!-- rempli par JS -->
+      </select>
+      <select id="filterSlotType" class="pk-select" aria-label="Type">
+        <!-- rempli par JS -->
+      </select>
       <select id="colleagueSelect" class="pk-select">
         <!-- rempli par JS -->
       </select>
@@ -63,8 +66,8 @@
         <button id="electionsAddBtn" type="button" class="pk-btn pk-btn-add-slot">+ Assigner un créneau</button>
       </div>
       <p id="electionsPeriodSummary" class="pk-elections-period-summary"></p>
-      <div id="electionsList" class="pk-elections-list">
-        <!-- rempli par JS -->
+      <div id="electionsHome" class="pk-elections-home">
+        <!-- résumé compact, détail via 📅 Planning en bas -->
       </div>
     </section>
   </main>
@@ -85,20 +88,20 @@
   <footer id="electionsFooter" class="pk-footer pk-module-hidden">
     <div class="pk-footer-grid pk-footer-grid--elections">
       <button id="electionsPlanningBtn" type="button" class="pk-btn pk-btn-footer">📅 Planning</button>
-      <button id="electionsUncoveredBtn" type="button" class="pk-btn pk-btn-footer">⚠️ Non couverts</button>
+      <button id="electionsUncoveredBtn" type="button" class="pk-btn pk-btn-footer">⚠️ À faire</button>
       <button id="electionsCopyBtn" type="button" class="pk-btn pk-btn-footer">📋 Copier planning</button>
       <button id="electionsCopyUncoveredBtn" type="button" class="pk-btn pk-btn-footer pk-btn-footer-split">
-        <span>Copier non couverts</span>
+        <span>Copier à faire</span>
         <span class="pk-btn-footer-sub">WhatsApp</span>
       </button>
     </div>
   </footer>
 
-  <!-- Modale planning élections (créneaux attribués) -->
+  <!-- Modale planning élections (créneaux planifiés) -->
   <div id="electionsPlanningModal" class="pk-modal pk-modal-hidden">
     <div class="pk-modal-content pk-modal-scrollable">
       <div class="pk-modal-header">
-        <h2>Planning — créneaux attribués</h2>
+        <h2>Planning — planifiés</h2>
         <button id="closeElectionsPlanningModal" type="button" class="pk-btn pk-btn-ghost">✕</button>
       </div>
       <div id="electionsPlanningContainer" class="pk-elections-planning-list">
@@ -120,17 +123,19 @@
             <label for="electionFormDate" class="pk-form-label">Date :</label>
             <input type="date" id="electionFormDate" class="pk-select pk-form-input" required>
           </div>
-          <div class="pk-form-group">
-            <label for="electionFormMainId" class="pk-form-label">Site (A) :</label>
-            <select id="electionFormMainId" class="pk-select pk-form-input" required></select>
-          </div>
-          <div class="pk-form-group">
-            <label for="electionFormSubId" class="pk-form-label">Sous-site (B) :</label>
-            <select id="electionFormSubId" class="pk-select pk-form-input" required></select>
-          </div>
-          <div class="pk-form-group">
-            <label for="electionFormType" class="pk-form-label">Type (C) :</label>
-            <select id="electionFormType" class="pk-select pk-form-input" required></select>
+          <div id="electionFormHierarchyGroup">
+            <div class="pk-form-group">
+              <label for="electionFormMainId" class="pk-form-label">Site (A) :</label>
+              <select id="electionFormMainId" class="pk-select pk-form-input" required></select>
+            </div>
+            <div class="pk-form-group">
+              <label for="electionFormSubId" class="pk-form-label">Sous-site (B) :</label>
+              <select id="electionFormSubId" class="pk-select pk-form-input" required></select>
+            </div>
+            <div class="pk-form-group">
+              <label for="electionFormType" class="pk-form-label">Type (C) :</label>
+              <select id="electionFormType" class="pk-select pk-form-input" required></select>
+            </div>
           </div>
           <div class="pk-form-group">
             <label for="electionFormAgent1" class="pk-form-label">Agent 1 :</label>
@@ -140,9 +145,9 @@
             <label for="electionFormAgent2" class="pk-form-label">Agent 2 :</label>
             <select id="electionFormAgent2" class="pk-select pk-form-input"></select>
           </div>
-          <div class="pk-form-group">
+          <div id="electionFormStatusGroup" class="pk-form-group pk-module-hidden">
             <label for="electionFormStatus" class="pk-form-label">Statut :</label>
-            <select id="electionFormStatus" class="pk-select pk-form-input" required></select>
+            <select id="electionFormStatus" class="pk-select pk-form-input"></select>
           </div>
           <div class="pk-form-group">
             <label for="electionFormComment" class="pk-form-label">Commentaire :</label>
@@ -157,11 +162,11 @@
     </div>
   </div>
 
-  <!-- Modale créneaux élections non couverts -->
+  <!-- Modale créneaux élections à faire -->
   <div id="electionsUncoveredModal" class="pk-modal pk-modal-hidden">
     <div class="pk-modal-content pk-modal-scrollable">
       <div class="pk-modal-header">
-        <h2>Créneaux élections non couverts</h2>
+        <h2>Créneaux à faire</h2>
         <button id="closeElectionsUncoveredModal" type="button" class="pk-btn pk-btn-ghost">✕</button>
       </div>
       <div id="electionsUncoveredContainer" class="pk-elections-uncovered-list">

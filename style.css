@@ -395,6 +395,10 @@
     z-index: 10001;
   }
   
+  #electionsFormModal {
+    z-index: 10050;
+  }
+
   .pk-modal-header {
     display: flex;
     justify-content: space-between;
@@ -671,6 +675,12 @@
     padding: 1rem;
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
     border-top: 1px solid rgba(0, 229, 255, 0.2);
+    background: var(--bg-panel);
+  }
+
+  .pk-modal-elections-form select option {
+    font-weight: 500;
+    color: var(--text-main);
     background: var(--bg-panel);
   }
 
@@ -1477,6 +1487,8 @@
     flex-shrink: 0;
     white-space: nowrap;
   }
+
+  .pk-elections-period-label {
     margin: 0.2rem 0 0;
     font-size: 0.85rem;
     color: var(--border-neon);
@@ -1496,42 +1508,16 @@
     font-weight: 600;
   }
 
-  .pk-elections-date-block {
-    margin: 0 0.75rem 1rem;
-    border: 1px solid rgba(0, 229, 255, 0.25);
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: rgba(14, 16, 24, 0.5);
-  }
-
-  .pk-elections-date-block-title {
-    margin: 0;
-    padding: 0.7rem 0.85rem;
-    font-size: 1rem;
-    font-weight: 700;
-    color: var(--border-neon);
-    background: var(--bg-panel-alt);
-    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-  }
-
-  .pk-elections-section-title {
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    padding: 0.55rem 0.85rem 0.25rem;
-    margin-top: 0.15rem;
-  }
-
-  .pk-elections-section-title--available {
-    color: #7eefff;
-  }
-
-  .pk-elections-section-title--chosen {
+  .pk-elections-date-line {
+    font-size: 0.82rem;
     color: var(--text-muted);
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    margin-top: 0.5rem;
-    padding-top: 0.75rem;
+    padding: 0 0.85rem 0.15rem;
+  }
+
+  .pk-elections-planning-date {
+    font-size: 0.82rem;
+    color: var(--border-neon);
+    margin-bottom: 0.15rem;
   }
 
   .pk-elections-date-header {
@@ -1555,12 +1541,14 @@
     border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
+  .pk-elections-row--todo,
   .pk-elections-row--available {
     border-color: rgba(0, 229, 255, 0.65);
     background: rgba(0, 229, 255, 0.1);
     box-shadow: 0 0 14px rgba(0, 229, 255, 0.15);
   }
 
+  .pk-elections-row--covered,
   .pk-elections-row--chosen {
     border-color: rgba(255, 255, 255, 0.1);
     background: rgba(14, 16, 24, 0.55);
@@ -1605,6 +1593,7 @@
     min-width: 0;
   }
 
+  .pk-elections-row--todo .pk-elections-creneau-title,
   .pk-elections-row--available .pk-elections-creneau-title {
     color: var(--border-neon);
   }
@@ -1625,6 +1614,7 @@
     font-weight: 700;
   }
 
+  .pk-elections-row--todo .pk-elections-binome--missing,
   .pk-elections-row--available .pk-elections-binome--missing {
     color: #ff8f8f;
   }
@@ -1648,14 +1638,19 @@
     min-height: 36px;
   }
 
-  .pk-elections-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding-bottom: 0.75rem;
-    max-height: calc(100vh - 280px);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+  .pk-elections-home {
+    padding: 0.75rem;
+  }
+
+  .pk-elections-home-intro {
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    border-radius: var(--radius);
+    background: rgba(14, 16, 24, 0.35);
+    border: 1px solid rgba(0, 229, 255, 0.12);
   }
 
   .pk-status-badge {
@@ -1667,6 +1662,7 @@
     white-space: nowrap;
   }
 
+  .pk-status--a-faire,
   .pk-status--a-couvrir { background: rgba(255, 107, 107, 0.25); color: #ff9b9b; }
   .pk-status--prevu { background: rgba(255, 193, 7, 0.2); color: #ffd966; }
   .pk-status--confirme { background: rgba(0, 229, 255, 0.2); color: #7eefff; }
@@ -1778,9 +1774,5 @@
       text-align: center;
       font-size: 0.72rem;
       padding: 0.4rem 0.35rem;
-    }
-
-    .pk-elections-list {
-      max-height: calc(100vh - 240px);
     }
   }
