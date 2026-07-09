@@ -1469,7 +1469,14 @@
     align-items: center;
   }
 
-  .pk-elections-period-label {
+  .pk-panel-header--elections {
+    align-items: flex-start;
+  }
+
+  .pk-panel-header--elections .pk-btn-add-slot {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
     margin: 0.2rem 0 0;
     font-size: 0.85rem;
     color: var(--border-neon);

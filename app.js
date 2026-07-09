@@ -2498,7 +2498,7 @@ function openElectionFormModal(editId) {
   if (title) {
     title.textContent = presence
       ? `Modifier — ${formatMainSubSlot(presence.mainId, presence.subId, presence.type)}`
-      : "Ajouter une présence";
+      : "Ajouter un créneau";
   }
 
   const dateInput = document.getElementById("electionFormDate");
@@ -2510,10 +2510,12 @@ function openElectionFormModal(editId) {
   const statusSelect = document.getElementById("electionFormStatus");
   const commentInput = document.getElementById("electionFormComment");
 
+  const periodStart = formatDate(ELECTION_PERIOD.year, ELECTION_PERIOD.month, ELECTION_PERIOD.startDay);
+  const periodEnd = formatDate(ELECTION_PERIOD.year, ELECTION_PERIOD.month, ELECTION_PERIOD.endDay);
   if (dateInput) {
-    dateInput.value = presence
-      ? presence.date
-      : getDefaultElectionFormDate();
+    dateInput.min = periodStart;
+    dateInput.max = periodEnd;
+    dateInput.value = presence ? presence.date : getDefaultElectionFormDate();
   }
 
   if (mainSelect) {
@@ -2676,6 +2678,8 @@ function initElectionsModule() {
 
   fillColleagueSelect(agent1, true);
   fillColleagueSelect(agent2, true);
+
+  document.getElementById("electionsAddBtn")?.addEventListener("click", () => openElectionFormModal(null));
 
   document.getElementById("saveElectionPresence")?.addEventListener("click", saveElectionPresenceFromForm);
   document.getElementById("cancelElectionPresence")?.addEventListener("click", closeElectionFormModal);
