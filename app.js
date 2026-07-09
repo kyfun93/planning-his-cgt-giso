@@ -2455,18 +2455,85 @@ function fillColleagueSelect(selectEl, includeEmpty) {
   });
 }
 
+function getElectionFormDate() {
+  const dateInput = document.getElementById("electionFormDate");
+  return dateInput?.value || getDefaultElectionFormDate();
+}
+
+function findElectionPresenceByKey(date, mainId, subId, type) {
+  const key = electionPresenceKey(date, mainId, subId, type);
+  return electionsState.presences.find(p =>
+    electionPresenceKey(p.date, p.mainId, p.subId, p.type) === key
+  );
+}
+
+function isElectionFormSlotSelectable(date, mainId, subId, type) {
+  const presence = findElectionPresenceByKey(date, mainId, subId, type);
+  if (!presence) return true;
+  if (electionsState.editingId && presence.id === electionsState.editingId) return true;
+  return !isElectionChosen(presence);
+}
+
+function populateElectionFormMainSelect(filterAvailableOnly) {
+  const mainSelect = document.getElementById("electionFormMainId");
+  if (!mainSelect) return;
+
+  const date = getElectionFormDate();
+  const previous = mainSelect.value;
+  let mains = getMainAttachments();
+
+  if (filterAvailableOnly) {
+    mains = mains.filter(main =>
+      getSubAttachments(main.id).some(sub =>
+        getSlotTypes(main.id, sub.id).some(type =>
+          isElectionFormSlotSelectable(date, main.id, sub.id, type)
+        )
+      )
+    );
+  }
+
+  mainSelect.innerHTML = "";
+  mains.forEach(main => {
+    const opt = document.createElement("option");
+    opt.value = main.id;
+    opt.textContent = main.label;
+    mainSelect.appendChild(opt);
+  });
+
+  if (previous && mains.some(m => m.id === previous)) {
+    mainSelect.value = previous;
+  }
+}
+
 function updateElectionFormSubSelect() {
   const mainSelect = document.getElementById("electionFormMainId");
   const subSelect = document.getElementById("electionFormSubId");
-  if (!mainSelect || !subSelect) return;
+  if (!mainSelect || !subSelect || !mainSelect.value) return;
+
+  const date = getElectionFormDate();
+  const previous = subSelect.value;
+  let subs = getSubAttachments(mainSelect.value);
+
+  if (!electionsState.editingId) {
+    subs = subs.filter(sub =>
+      getSlotTypes(mainSelect.value, sub.id).some(type =>
+        isElectionFormSlotSelectable(date, mainSelect.value, sub.id, type)
+      )
+    );
+  }
 
   subSelect.innerHTML = "";
-  getSubAttachments(mainSelect.value).forEach(sub => {
+  subs.forEach(sub => {
     const opt = document.createElement("option");
     opt.value = sub.id;
     opt.textContent = sub.label;
     subSelect.appendChild(opt);
   });
+
+  if (previous && subs.some(s => s.id === previous)) {
+    subSelect.value = previous;
+  }
+
   updateElectionFormTypeSelect();
 }
 
@@ -2474,15 +2541,29 @@ function updateElectionFormTypeSelect() {
   const mainSelect = document.getElementById("electionFormMainId");
   const subSelect = document.getElementById("electionFormSubId");
   const typeSelect = document.getElementById("electionFormType");
-  if (!mainSelect || !subSelect || !typeSelect) return;
+  if (!mainSelect || !subSelect || !typeSelect || !subSelect.value) return;
+
+  const date = getElectionFormDate();
+  const previous = typeSelect.value;
+  let types = getSlotTypes(mainSelect.value, subSelect.value);
+
+  if (!electionsState.editingId) {
+    types = types.filter(type =>
+      isElectionFormSlotSelectable(date, mainSelect.value, subSelect.value, type)
+    );
+  }
 
   typeSelect.innerHTML = "";
-  getSlotTypes(mainSelect.value, subSelect.value).forEach(type => {
+  types.forEach(type => {
     const opt = document.createElement("option");
     opt.value = type;
     opt.textContent = getElectionTypeLabel(type);
     typeSelect.appendChild(opt);
   });
+
+  if (previous && types.includes(previous)) {
+    typeSelect.value = previous;
+  }
 }
 
 function openElectionFormModal(editId) {
@@ -2519,7 +2600,14 @@ function openElectionFormModal(editId) {
   }
 
   if (mainSelect) {
-    mainSelect.value = presence ? presence.mainId : mainSelect.options[0]?.value || "";
+    populateElectionFormMainSelect(!presence);
+    if (!presence && !mainSelect.options.length) {
+      alert("Tous les créneaux sont déjà attribués pour cette date.");
+      return;
+    }
+    if (presence) {
+      mainSelect.value = presence.mainId;
+    }
   }
   updateElectionFormSubSelect();
 
@@ -2657,15 +2745,19 @@ function initElectionsModule() {
   const agent2 = document.getElementById("electionFormAgent2");
 
   if (mainSelect) {
-    mainSelect.innerHTML = "";
-    getMainAttachments().forEach(main => {
-      const opt = document.createElement("option");
-      opt.value = main.id;
-      opt.textContent = main.label;
-      mainSelect.appendChild(opt);
-    });
     mainSelect.addEventListener("change", updateElectionFormSubSelect);
   }
+
+  document.getElementById("electionFormDate")?.addEventListener("change", () => {
+    if (!electionsState.editingId) {
+      populateElectionFormMainSelect(true);
+      if (!mainSelect?.options.length) {
+        alert("Tous les créneaux sont déjà attribués pour cette date.");
+        return;
+      }
+      updateElectionFormSubSelect();
+    }
+  });
 
   if (subSelect) {
     subSelect.addEventListener("change", updateElectionFormTypeSelect);
