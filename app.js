@@ -2057,12 +2057,58 @@ const ELECTION_STATUSES = [
   "Annulé"
 ];
 
+// Période des élections : 19 au 23 octobre
+const ELECTION_PERIOD = {
+  year: 2026,
+  month: 9, // octobre (0-11)
+  startDay: 19,
+  endDay: 23
+};
+
 const electionsState = {
-  currentYear: new Date().getFullYear(),
-  currentMonth: new Date().getMonth(),
+  currentYear: ELECTION_PERIOD.year,
+  currentMonth: ELECTION_PERIOD.month,
   presences: [],
   editingId: null
 };
+
+function getElectionPeriodDates() {
+  const dates = [];
+  for (let day = ELECTION_PERIOD.startDay; day <= ELECTION_PERIOD.endDay; day++) {
+    dates.push(formatDate(ELECTION_PERIOD.year, ELECTION_PERIOD.month, day));
+  }
+  return dates;
+}
+
+function getElectionPeriodLabel() {
+  return `${ELECTION_PERIOD.startDay} au ${ELECTION_PERIOD.endDay} ${monthNames[ELECTION_PERIOD.month]} ${ELECTION_PERIOD.year}`;
+}
+
+function updateElectionsPeriodLabel() {
+  const label = document.getElementById("electionsPeriodLabel");
+  if (label) label.textContent = `Période : ${getElectionPeriodLabel()}`;
+}
+
+function getDefaultElectionFormDate() {
+  if (
+    electionsState.currentYear === ELECTION_PERIOD.year &&
+    electionsState.currentMonth === ELECTION_PERIOD.month
+  ) {
+    return formatDate(ELECTION_PERIOD.year, ELECTION_PERIOD.month, ELECTION_PERIOD.startDay);
+  }
+  return formatDate(electionsState.currentYear, electionsState.currentMonth, 1);
+}
+
+function sortElectionPresences(a, b) {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  const mainA = getMainAttachmentLabel(a.mainId);
+  const mainB = getMainAttachmentLabel(b.mainId);
+  if (mainA !== mainB) return mainA.localeCompare(mainB);
+  const subA = getSubAttachmentLabel(a.subId);
+  const subB = getSubAttachmentLabel(b.subId);
+  if (subA !== subB) return subA.localeCompare(subB);
+  return (a.type || "").localeCompare(b.type || "");
+}
 
 function electionPresenceKey(date, mainId, subId, type) {
   return `${date}|${mainId}|${subId}|${type}`;
@@ -2195,16 +2241,26 @@ function getElectionsForMonth(year, month) {
   const prefix = `${year}-${String(month + 1).padStart(2, "0")}`;
   return electionsState.presences
     .filter(p => p.date && p.date.startsWith(prefix))
-    .sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      const mainA = getMainAttachmentLabel(a.mainId);
-      const mainB = getMainAttachmentLabel(b.mainId);
-      if (mainA !== mainB) return mainA.localeCompare(mainB);
-      const subA = getSubAttachmentLabel(a.subId);
-      const subB = getSubAttachmentLabel(b.subId);
-      if (subA !== subB) return subA.localeCompare(subB);
-      return (a.type || "").localeCompare(b.type || "");
-    });
+    .sort(sortElectionPresences);
+}
+
+function getElectionPeriodPresences() {
+  const periodDates = new Set(getElectionPeriodDates());
+  return electionsState.presences
+    .filter(p => periodDates.has(p.date))
+    .sort(sortElectionPresences);
+}
+
+function getVisibleElectionPresences() {
+  const monthPresences = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+  if (
+    electionsState.currentYear === ELECTION_PERIOD.year &&
+    electionsState.currentMonth === ELECTION_PERIOD.month
+  ) {
+    const periodDates = new Set(getElectionPeriodDates());
+    return monthPresences.filter(p => periodDates.has(p.date));
+  }
+  return monthPresences;
 }
 
 function generateElectionsForDate(date) {
@@ -2234,13 +2290,16 @@ function generateElectionsForDate(date) {
   return added;
 }
 
-function generateElectionsForMonth(year, month) {
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  let total = 0;
-  for (let day = 1; day <= daysInMonth; day++) {
-    total += generateElectionsForDate(formatDate(year, month, day));
-  }
-  return total;
+function generateElectionsForDates(dates) {
+  let added = 0;
+  dates.forEach(date => {
+    added += generateElectionsForDate(date);
+  });
+  return added;
+}
+
+function generateElectionsForPeriod() {
+  return generateElectionsForDates(getElectionPeriodDates());
 }
 
 function updateElectionsMonthLabel() {
@@ -2254,13 +2313,18 @@ function renderElectionsList() {
   const container = document.getElementById("electionsList");
   if (!container) return;
 
-  const presences = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+  const presences = getVisibleElectionPresences();
   container.innerHTML = "";
 
   if (!presences.length) {
     const empty = document.createElement("p");
     empty.className = "pk-elections-empty";
-    empty.textContent = "Aucune présence pour ce mois. Utilisez « Générer le mois » ou « + Ajouter ».";
+    const onPeriodMonth =
+      electionsState.currentYear === ELECTION_PERIOD.year &&
+      electionsState.currentMonth === ELECTION_PERIOD.month;
+    empty.textContent = onPeriodMonth
+      ? `Aucune présence pour ${getElectionPeriodLabel()}. Cliquez « Générer 19-23 oct. » ou « + Ajouter ».`
+      : "Aucune présence pour ce mois. Utilisez « + Ajouter ».";
     container.appendChild(empty);
     return;
   }
@@ -2495,7 +2559,7 @@ function openElectionFormModal(editId) {
   if (dateInput) {
     dateInput.value = presence
       ? presence.date
-      : formatDate(electionsState.currentYear, electionsState.currentMonth, 1);
+      : getDefaultElectionFormDate();
   }
 
   if (mainSelect) {
@@ -2593,8 +2657,7 @@ function renderElectionsUncoveredModal() {
   const container = document.getElementById("electionsUncoveredContainer");
   if (!container) return;
 
-  const uncovered = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth)
-    .filter(isElectionUncovered);
+  const uncovered = getElectionPeriodPresences().filter(isElectionUncovered);
 
   container.innerHTML = "";
 
@@ -2614,6 +2677,7 @@ function renderElectionsUncoveredModal() {
 function initElectionsModule() {
   loadElectionsFromStorage();
   updateElectionsMonthLabel();
+  updateElectionsPeriodLabel();
 
   const mainSelect = document.getElementById("electionFormMainId");
   const subSelect = document.getElementById("electionFormSubId");
@@ -2674,12 +2738,15 @@ function initElectionsModule() {
     renderElectionsList();
   });
 
-  document.getElementById("electionsGenerateMonthBtn")?.addEventListener("click", () => {
-    const monthLabel = monthNames[electionsState.currentMonth] + " " + electionsState.currentYear;
-    if (!confirm(`Générer tous les créneaux possibles pour ${monthLabel} ?\n(Les présences existantes ne seront pas dupliquées.)`)) return;
-    const added = generateElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+  document.getElementById("electionsGeneratePeriodBtn")?.addEventListener("click", () => {
+    const periodLabel = getElectionPeriodLabel();
+    if (!confirm(`Générer tous les créneaux possibles pour ${periodLabel} ?\n(Les présences existantes ne seront pas dupliquées.)`)) return;
+    const added = generateElectionsForPeriod();
+    electionsState.currentYear = ELECTION_PERIOD.year;
+    electionsState.currentMonth = ELECTION_PERIOD.month;
+    updateElectionsMonthLabel();
     renderElectionsList();
-    alert(added > 0 ? `${added} présence(s) ajoutée(s).` : "Tous les créneaux existent déjà pour ce mois.");
+    alert(added > 0 ? `${added} présence(s) ajoutée(s).` : "Tous les créneaux existent déjà pour cette période.");
   });
 
   document.getElementById("electionsAddBtn")?.addEventListener("click", () => openElectionFormModal(null));
@@ -2700,15 +2767,14 @@ function initElectionsModule() {
   });
 
   document.getElementById("electionsCopyBtn")?.addEventListener("click", async () => {
-    const presences = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth);
+    const presences = getElectionPeriodPresences();
     const text = formatElectionsWhatsApp(presences);
     const ok = await copyTextToClipboard(text);
     alert(ok ? "Planning élections copié dans le presse-papiers." : "Copie impossible. Sélectionnez le texte manuellement.");
   });
 
   document.getElementById("electionsCopyUncoveredBtn")?.addEventListener("click", async () => {
-    const uncovered = getElectionsForMonth(electionsState.currentYear, electionsState.currentMonth)
-      .filter(isElectionUncovered);
+    const uncovered = getElectionPeriodPresences().filter(isElectionUncovered);
     const text = formatElectionsWhatsApp(uncovered);
     const ok = await copyTextToClipboard(text);
     alert(ok ? "Créneaux non couverts copiés." : "Copie impossible.");

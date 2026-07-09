@@ -1469,6 +1469,13 @@
     align-items: center;
   }
 
+  .pk-elections-period-label {
+    margin: 0.2rem 0 0;
+    font-size: 0.8rem;
+    color: var(--border-neon);
+    font-weight: 500;
+  }
+
   .pk-elections-list {
     display: flex;
     flex-direction: column;
