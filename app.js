@@ -2411,31 +2411,63 @@ function createElectionRow(presence) {
 
   const actions = document.createElement("div");
   actions.className = "pk-elections-row-actions";
-
-  const btnEdit = document.createElement("button");
-  btnEdit.type = "button";
-  btnEdit.className = "pk-btn pk-btn-ghost";
-  btnEdit.textContent = "Modifier";
-  btnEdit.addEventListener("click", () => openElectionFormModal(presence.id));
-
-  const btnDelete = document.createElement("button");
-  btnDelete.type = "button";
-  btnDelete.className = "pk-btn pk-btn-ghost";
-  btnDelete.textContent = "Supprimer";
-  btnDelete.addEventListener("click", () => deleteElectionPresence(presence.id));
-
-  actions.appendChild(btnEdit);
-  actions.appendChild(btnDelete);
+  appendElectionActionButtons(actions, presence);
   row.appendChild(actions);
 
   return row;
 }
 
-function deleteElectionPresence(id) {
-  if (!confirm("Supprimer cette présence élections ?")) return;
-  electionsState.presences = electionsState.presences.filter(p => p.id !== id);
+function cancelElectionAssignment(id) {
+  const presence = electionsState.presences.find(p => p.id === id);
+  if (!presence) return;
+
+  const label = formatMainSubSlot(presence.mainId, presence.subId, presence.type);
+  if (!confirm(`Annuler l'attribution pour « ${label} » ?\nLe créneau redeviendra disponible.`)) return;
+
+  const idx = electionsState.presences.findIndex(p => p.id === id);
+  if (idx === -1) return;
+
+  electionsState.presences[idx] = {
+    ...electionsState.presences[idx],
+    agent1Id: "",
+    agent2Id: "",
+    status: "À couvrir",
+    comment: ""
+  };
+
   saveElectionsToStorage();
   renderElectionsUI();
+
+  const planningModal = document.getElementById("electionsPlanningModal");
+  if (planningModal && !planningModal.classList.contains("pk-modal-hidden")) {
+    renderElectionsPlanningModal();
+  }
+}
+
+function appendElectionActionButtons(container, presence, options = {}) {
+  const { closePlanningModal = false } = options;
+
+  const btnEdit = document.createElement("button");
+  btnEdit.type = "button";
+  btnEdit.className = "pk-btn pk-btn-ghost";
+  btnEdit.textContent = "Modifier";
+  btnEdit.addEventListener("click", () => {
+    if (closePlanningModal) {
+      document.getElementById("electionsPlanningModal")?.classList.add("pk-modal-hidden");
+      document.body.classList.remove("pk-modal-open");
+    }
+    openElectionFormModal(presence.id);
+  });
+  container.appendChild(btnEdit);
+
+  if (isElectionChosen(presence)) {
+    const btnCancel = document.createElement("button");
+    btnCancel.type = "button";
+    btnCancel.className = "pk-btn pk-btn-ghost pk-btn-election-cancel";
+    btnCancel.textContent = "Annuler";
+    btnCancel.addEventListener("click", () => cancelElectionAssignment(presence.id));
+    container.appendChild(btnCancel);
+  }
 }
 
 function fillColleagueSelect(selectEl, includeEmpty) {
@@ -2724,16 +2756,10 @@ function createElectionPlanningRow(presence) {
   badge.textContent = presence.status;
   meta.appendChild(badge);
 
-  const btnEdit = document.createElement("button");
-  btnEdit.type = "button";
-  btnEdit.className = "pk-btn pk-btn-ghost";
-  btnEdit.textContent = "Modifier";
-  btnEdit.addEventListener("click", () => {
-    document.getElementById("electionsPlanningModal")?.classList.add("pk-modal-hidden");
-    document.body.classList.remove("pk-modal-open");
-    openElectionFormModal(presence.id);
-  });
-  meta.appendChild(btnEdit);
+  const actions = document.createElement("div");
+  actions.className = "pk-elections-planning-actions";
+  appendElectionActionButtons(actions, presence, { closePlanningModal: true });
+  meta.appendChild(actions);
 
   row.appendChild(creneau);
   row.appendChild(binome);

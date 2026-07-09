@@ -1742,10 +1742,22 @@
     flex-wrap: wrap;
   }
 
+  .pk-elections-planning-actions {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .pk-elections-planning-actions .pk-btn,
   .pk-elections-planning-meta .pk-btn {
     font-size: 0.78rem;
     padding: 0.35rem 0.6rem;
     min-height: 36px;
+  }
+
+  .pk-btn-election-cancel {
+    border-color: rgba(255, 107, 107, 0.45);
+    color: #ff9b9b;
   }
 
   .pk-footer-grid--elections {
