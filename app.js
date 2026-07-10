@@ -2151,12 +2151,12 @@ function compareElectionPresences(a, b, includeDate = true) {
   const subB = getSubAttachmentLabel(b.subId);
   if (subA !== subB) return subA.localeCompare(subB, "fr");
 
-  const timeA = getElectionTypeTimeOrder(a.type);
-  const timeB = getElectionTypeTimeOrder(b.type);
+  const timeA = getElectionTypeTimeOrder(getElectionPresenceType(a));
+  const timeB = getElectionTypeTimeOrder(getElectionPresenceType(b));
   if (timeA !== timeB) return timeA - timeB;
 
-  return getElectionHierarchyIndex(a.mainId, a.subId, a.type) -
-    getElectionHierarchyIndex(b.mainId, b.subId, b.type);
+  return getElectionHierarchyIndex(a.mainId, a.subId, getElectionPresenceType(a)) -
+    getElectionHierarchyIndex(b.mainId, b.subId, getElectionPresenceType(b));
 }
 
 function sortElectionPresences(a, b) {
@@ -2179,18 +2179,31 @@ function electionPresenceKey(date, mainId, subId, type) {
   return `${date}|${mainId}|${subId}|${type}`;
 }
 
+function getElectionPresenceType(presence) {
+  return presence?.type ?? presence?.creneau ?? "";
+}
+
+function presenceMatchesHierarchyRow(presence, row) {
+  const type = getElectionPresenceType(presence);
+  return presence.mainId === row.mainId &&
+    presence.subId === row.subId &&
+    row.slotType === type;
+}
+
 function isElectionPeriodPresence(presence) {
-  return getActiveElectionHierarchy().some(row =>
-    row.mainId === presence.mainId &&
-    row.subId === presence.subId &&
-    row.slotType === presence.type
-  );
+  return getActiveElectionHierarchy().some(row => presenceMatchesHierarchyRow(presence, row));
 }
 
 function findElectionPresenceBySlot(mainId, subId, type) {
   return electionsState.presences.find(p =>
-    p.mainId === mainId && p.subId === subId && p.type === type
+    p.mainId === mainId &&
+    p.subId === subId &&
+    getElectionPresenceType(p) === type
   );
+}
+
+function hasElectionPlannedDate(presence) {
+  return Boolean(presence.date) && isDateInElectionPeriod(presence.date);
 }
 
 function loadElectionsFromStorage() {
@@ -2258,9 +2271,7 @@ function migrateElectionPresencesToSinglePerSlot() {
   const merged = [];
 
   getActiveElectionHierarchy().forEach(row => {
-    const candidates = electionsState.presences.filter(p =>
-      p.mainId === row.mainId && p.subId === row.subId && p.type === row.slotType
-    );
+    const candidates = electionsState.presences.filter(p => presenceMatchesHierarchyRow(p, row));
     if (!candidates.length) return;
 
     const scorePresence = presence => (
@@ -2422,7 +2433,7 @@ function getElectionPeriodPresences() {
 
 function getPlannedElectionPresences() {
   return getElectionPeriodPresences()
-    .filter(p => p.date && isDateInElectionPeriod(p.date))
+    .filter(hasElectionPlannedDate)
     .sort(sortElectionPresences);
 }
 
@@ -2445,10 +2456,108 @@ function getUnplannedElectionPresences() {
     .sort((a, b) => compareElectionPresences(a, b, false));
 }
 
+function findElectionCandidatesForRow(row) {
+  return electionsState.presences.filter(p => {
+    if (p.mainId !== row.mainId || p.subId !== row.subId) return false;
+    return getElectionPresenceType(p) === row.slotType;
+  });
+}
+
+function scoreElectionPresence(presence, periodDates) {
+  return (
+    (isElectionChosen(presence) ? 100 : 0) +
+    (presence.date && periodDates.has(presence.date) ? 10 : 0) +
+    (presence.date ? 1 : 0)
+  );
+}
+
+function createEmptyElectionPresence(row) {
+  return {
+    id: generateElectionId(),
+    date: "",
+    mainId: row.mainId,
+    subId: row.subId,
+    type: row.slotType,
+    creneau: row.slotType,
+    agent1Id: "",
+    agent2Id: "",
+    status: "À faire",
+    comment: ""
+  };
+}
+
+/** Garantit exactement 1 entrée par créneau ATTACHMENT_HIERARCHY (55). */
+function reconcileElectionSlotCatalog() {
+  const periodDates = new Set(getElectionPeriodDates());
+  const catalogPresences = [];
+  let changed = false;
+
+  getActiveElectionHierarchy().forEach(row => {
+    const candidates = findElectionCandidatesForRow(row);
+    let best;
+
+    if (candidates.length) {
+      best = { ...candidates.sort((a, b) => scoreElectionPresence(b, periodDates) - scoreElectionPresence(a, periodDates))[0] };
+      if (best.type !== row.slotType || best.creneau !== row.slotType) {
+        best.type = row.slotType;
+        best.creneau = row.slotType;
+        changed = true;
+      }
+      if (best.date && !periodDates.has(best.date)) {
+        best.date = "";
+        changed = true;
+      }
+      if (candidates.length > 1) changed = true;
+    } else {
+      best = createEmptyElectionPresence(row);
+      changed = true;
+    }
+
+    catalogPresences.push(best);
+  });
+
+  const catalogIds = new Set(catalogPresences.map(p => p.id));
+  const nonHierarchy = electionsState.presences.filter(p => {
+    if (catalogIds.has(p.id)) return false;
+    return !getActiveElectionHierarchy().some(row =>
+      p.mainId === row.mainId &&
+      p.subId === row.subId &&
+      getElectionPresenceType(p) === row.slotType
+    );
+  });
+
+  const nextPresences = [...nonHierarchy, ...catalogPresences];
+  if (nextPresences.length !== electionsState.presences.length) changed = true;
+
+  if (changed) {
+    electionsState.presences = nextPresences;
+    saveElectionsToStorage();
+  }
+
+  return catalogPresences.length;
+}
+
+const ELECTION_CATALOG_REPAIR_KEY = "election_catalog_repair_v2";
+
+/** Une fois : retire les dates auto-générées sans binôme, puis reconstruit le catalogue 55. */
+function migrateElectionCatalogRepair() {
+  if (localStorage.getItem(ELECTION_CATALOG_REPAIR_KEY)) return;
+
+  electionsState.presences.forEach(presence => {
+    if (!presence.date || !isDateInElectionPeriod(presence.date)) return;
+    if (presence.agent1Id || presence.agent2Id) return;
+    if (["Binôme prévu", "Confirmé", "Fait"].includes(presence.status)) return;
+    presence.date = "";
+    presence.status = "À faire";
+  });
+
+  reconcileElectionSlotCatalog();
+  localStorage.setItem(ELECTION_CATALOG_REPAIR_KEY, "1");
+  console.log(`📋 Catalogue élections réparé — ${getElectionAFairePresences().length} à faire / ${getExpectedElectionSlotsTotal()} total`);
+}
+
 function syncElectionPeriodPresences() {
-  const added = generateElectionsForPeriod();
-  if (added > 0) saveElectionsToStorage();
-  return added;
+  return reconcileElectionSlotCatalog();
 }
 
 function normalizeElectionsState() {
@@ -2460,36 +2569,6 @@ function normalizeElectionsState() {
       creneau: presence.creneau ?? type
     };
   });
-}
-
-function slotMatchesHierarchyRow(presence, row) {
-  return presence.mainId === row.mainId &&
-    presence.subId === row.subId &&
-    (presence.type === row.slotType || presence.creneau === row.slotType);
-}
-
-function generateElectionsForPeriod() {
-  let added = 0;
-  getActiveElectionHierarchy().forEach(row => {
-    const exists = electionsState.presences.some(p => slotMatchesHierarchyRow(p, row));
-    if (!exists) {
-      electionsState.presences.push({
-        id: generateElectionId(),
-        date: "",
-        mainId: row.mainId,
-        subId: row.subId,
-        type: row.slotType,
-        creneau: row.slotType,
-        agent1Id: "",
-        agent2Id: "",
-        status: "À faire",
-        comment: ""
-      });
-      added++;
-    }
-  });
-  if (added > 0) saveElectionsToStorage();
-  return added;
 }
 
 function updateElectionsPeriodSummary() {
@@ -2607,17 +2686,7 @@ function cancelElectionAssignment(id) {
     comment: ""
   };
 
-  saveElectionsToStorage();
-  renderElectionsUI();
-
-  const planningModal = document.getElementById("electionsPlanningModal");
-  const uncoveredModal = document.getElementById("electionsUncoveredModal");
-  if (planningModal && !planningModal.classList.contains("pk-modal-hidden")) {
-    renderElectionsPlanningModal();
-  }
-  if (uncoveredModal && !uncoveredModal.classList.contains("pk-modal-hidden")) {
-    renderElectionsUncoveredModal();
-  }
+  persistElectionsChange();
 }
 
 function appendElectionActionButtons(container, presence, options = {}) {
@@ -2780,6 +2849,53 @@ function closeElectionsListModals() {
   document.getElementById("electionsUncoveredModal")?.classList.add("pk-modal-hidden");
 }
 
+function refreshElectionsListModals() {
+  const planningModal = document.getElementById("electionsPlanningModal");
+  const uncoveredModal = document.getElementById("electionsUncoveredModal");
+  if (planningModal && !planningModal.classList.contains("pk-modal-hidden")) {
+    renderElectionsPlanningModal();
+  }
+  if (uncoveredModal && !uncoveredModal.classList.contains("pk-modal-hidden")) {
+    renderElectionsUncoveredModal();
+  }
+}
+
+/** Après ajout / modification / annulation : catalogue + résumé + modales ouvertes. */
+function persistElectionsChange() {
+  reconcileElectionSlotCatalog();
+  saveElectionsToStorage();
+  updateElectionsPeriodSummary();
+  refreshElectionsListModals();
+}
+
+function updateElectionPresenceFromPayload(payload, editingId = null) {
+  const existing = findElectionPresenceBySlot(payload.mainId, payload.subId, payload.type);
+
+  if (existing && editingId && existing.id !== editingId) {
+    return { ok: false, reason: "duplicate" };
+  }
+
+  if (existing) {
+    const idx = electionsState.presences.findIndex(p => p.id === existing.id);
+    if (idx !== -1) {
+      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
+      return { ok: true, id: existing.id };
+    }
+  }
+
+  if (editingId) {
+    const idx = electionsState.presences.findIndex(p => p.id === editingId);
+    if (idx !== -1) {
+      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
+      return { ok: true, id: editingId };
+    }
+  }
+
+  const id = generateElectionId();
+  electionsState.presences.push({ id, ...payload });
+  return { ok: true, id };
+}
+
 function openElectionFormModal(editId) {
   const modal = document.getElementById("electionsFormModal");
   const title = document.getElementById("electionsFormTitle");
@@ -2930,23 +3046,14 @@ function saveElectionPresenceFromForm() {
     return;
   }
 
-  if (existing) {
-    const idx = electionsState.presences.findIndex(p => p.id === existing.id);
-    if (idx !== -1) {
-      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
-    }
-  } else if (electionsState.editingId) {
-    const idx = electionsState.presences.findIndex(p => p.id === electionsState.editingId);
-    if (idx !== -1) {
-      electionsState.presences[idx] = { ...electionsState.presences[idx], ...payload };
-    }
-  } else {
-    electionsState.presences.push({ id: generateElectionId(), ...payload });
+  const result = updateElectionPresenceFromPayload(payload, electionsState.editingId);
+  if (!result.ok) {
+    alert("Ce créneau est déjà enregistré pour la période.");
+    return;
   }
 
-  saveElectionsToStorage();
   closeElectionFormModal();
-  renderElectionsUI();
+  persistElectionsChange();
 }
 
 function createElectionPlanningRow(presence) {
@@ -3069,12 +3176,32 @@ function renderElectionsUncoveredModal() {
   });
 }
 
+function repairElectionPresenceTypes() {
+  let changed = false;
+  electionsState.presences.forEach(presence => {
+    const row = ATTACHMENT_HIERARCHY.find(item =>
+      item.mainId === presence.mainId &&
+      item.subId === presence.subId &&
+      (item.slotType === (presence.type ?? "") || item.slotType === (presence.creneau ?? ""))
+    );
+    if (!row) return;
+    if (presence.type !== row.slotType || presence.creneau !== row.slotType) {
+      presence.type = row.slotType;
+      presence.creneau = row.slotType;
+      changed = true;
+    }
+  });
+  if (changed) saveElectionsToStorage();
+}
+
 function initElectionsModule() {
   loadElectionsFromStorage();
   normalizeElectionsState();
   cleanupElectionDemoData();
   migrateElectionStatusLabels();
   migrateElectionPresencesToSinglePerSlot();
+  repairElectionPresenceTypes();
+  migrateElectionCatalogRepair();
   syncElectionPeriodPresences();
   updateElectionsPeriodLabel();
   renderElectionsUI();
@@ -3155,6 +3282,8 @@ function initElectionsModule() {
 function openElectionsModule() {
   migrateElectionStatusLabels();
   migrateElectionPresencesToSinglePerSlot();
+  repairElectionPresenceTypes();
+  migrateElectionCatalogRepair();
   syncElectionPeriodPresences();
   renderElectionsUI();
 }
