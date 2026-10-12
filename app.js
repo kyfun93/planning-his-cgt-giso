@@ -2096,7 +2096,7 @@ function getElectionPeriodLabel() {
 function updateElectionsPeriodLabel() {
   const label = document.getElementById("electionsPeriodLabel");
   if (label) {
-    label.textContent = `Période : ${getElectionPeriodLabel()} — ${getExpectedElectionSlotsTotal()} créneaux à répartir sur les jours`;
+    label.textContent = `Période : ${getElectionPeriodLabel()} — ${getExpectedElectionSlotsTotal()} créneaux — partagé ordi / téléphone`;
   }
 }
 
@@ -2249,12 +2249,13 @@ function saveElectionsToStorage() {
   }
 }
 
-function electionDataScore(presences) {
-  if (!Array.isArray(presences)) return 0;
-  return presences.reduce((n, p) => n
-    + (p.date ? 2 : 0)
-    + (p.agent1Id ? 1 : 0)
-    + (p.agent2Id ? 1 : 0), 0);
+function electionHasContent(presences) {
+  return (presences || []).some(p => p.date || p.agent1Id || p.agent2Id);
+}
+
+function isElectionFormOpen() {
+  const modal = document.getElementById("electionsFormModal");
+  return Boolean(modal && !modal.classList.contains("pk-modal-hidden"));
 }
 
 async function loadElectionsCloudPayload() {
@@ -2280,7 +2281,9 @@ async function loadElectionsCloudPayload() {
 
 async function saveElectionsToCloud() {
   if (!supabaseClient) return false;
-  electionsState.updatedAt = new Date().toISOString();
+  if (!electionsState.updatedAt) {
+    electionsState.updatedAt = new Date().toISOString();
+  }
   saveElectionsToStorage();
   try {
     const { error } = await supabaseClient
@@ -2313,37 +2316,95 @@ function scheduleElectionsCloudSave() {
   clearTimeout(electionsCloudSaveTimer);
   electionsCloudSaveTimer = setTimeout(() => {
     saveElectionsToCloud();
-  }, 400);
+  }, 250);
+}
+
+function applyElectionsPayload(presences, updatedAt) {
+  electionsState.presences = presences;
+  electionsState.updatedAt = updatedAt || "";
+  normalizeElectionsState();
+  repairElectionPresenceTypes();
+  const before = JSON.stringify(electionsState.presences);
+  syncElectionPeriodPresences();
+  saveElectionsToStorage();
+  updateElectionsPeriodLabel();
+  renderElectionsUI();
+  refreshElectionsListModals();
+  if (JSON.stringify(electionsState.presences) !== before) {
+    scheduleElectionsCloudSave();
+  }
 }
 
 async function syncElectionsWithCloud() {
-  const cloud = await loadElectionsCloudPayload();
-  const localScore = electionDataScore(electionsState.presences);
-  if (!cloud) {
-    if (localScore > 0) await saveElectionsToCloud();
-    return;
+  if (electionsState.syncing || isElectionFormOpen()) return;
+  electionsState.syncing = true;
+  try {
+    const cloud = await loadElectionsCloudPayload();
+    const localContent = electionHasContent(electionsState.presences);
+
+    if (!cloud) {
+      if (localContent) await saveElectionsToCloud();
+      return;
+    }
+
+    const cloudContent = electionHasContent(cloud.presences);
+    if (cloudContent && !localContent) {
+      applyElectionsPayload(cloud.presences, cloud.updatedAt);
+      return;
+    }
+    if (localContent && !cloudContent) {
+      await saveElectionsToCloud();
+      return;
+    }
+    if (!cloudContent && !localContent) return;
+
+    const cloudTime = cloud.updatedAt || "";
+    const localTime = electionsState.updatedAt || "";
+    if (cloudTime > localTime) {
+      applyElectionsPayload(cloud.presences, cloud.updatedAt);
+      return;
+    }
+    if (localTime > cloudTime) {
+      await saveElectionsToCloud();
+    }
+  } finally {
+    electionsState.syncing = false;
   }
+}
 
-  const cloudScore = electionDataScore(cloud.presences);
-  const takeCloud = cloudScore > localScore
-    || (cloudScore === localScore
-      && cloudScore > 0
-      && (cloud.updatedAt || "") > (electionsState.updatedAt || ""));
+function startElectionsLiveSync() {
+  if (electionsState.liveSyncStarted) return;
+  electionsState.liveSyncStarted = true;
 
-  if (takeCloud) {
-    electionsState.presences = cloud.presences;
-    electionsState.updatedAt = cloud.updatedAt || "";
-    normalizeElectionsState();
-    repairElectionPresenceTypes();
-    syncElectionPeriodPresences();
-    saveElectionsToStorage();
-    updateElectionsPeriodLabel();
-    renderElectionsUI();
-    return;
-  }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      clearTimeout(electionsCloudSaveTimer);
+      saveElectionsToCloud();
+    } else {
+      syncElectionsWithCloud();
+    }
+  });
+  window.addEventListener("pageshow", () => syncElectionsWithCloud());
+  window.addEventListener("focus", () => syncElectionsWithCloud());
 
-  if (localScore > cloudScore) {
-    await saveElectionsToCloud();
+  setInterval(() => {
+    if (document.visibilityState !== "visible") return;
+    if (document.getElementById("electionsModule")?.classList.contains("pk-module-hidden")) return;
+    syncElectionsWithCloud();
+  }, 8000);
+
+  if (!supabaseClient?.channel) return;
+  try {
+    supabaseClient
+      .channel("planning-elections")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "his_slots", filter: `id=eq.${ELECTIONS_CLOUD_SLOT_ID}` },
+        () => syncElectionsWithCloud()
+      )
+      .subscribe();
+  } catch (e) {
+    console.warn("Temps réel élections indisponible:", e);
   }
 }
 
@@ -3446,6 +3507,7 @@ function initElectionsModule() {
   syncElectionPeriodPresences();
   updateElectionsPeriodLabel();
   renderElectionsUI();
+  startElectionsLiveSync();
   syncElectionsWithCloud();
 
   const statusSelect = document.getElementById("electionFormStatus");
