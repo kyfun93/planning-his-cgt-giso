@@ -3065,13 +3065,11 @@ function updateElectionFormSubSelect() {
   const previous = subSelect.value;
   let subs = getSubAttachments(mainSelect.value);
 
-  if (!electionsState.editingId) {
-    subs = subs.filter(sub =>
-      getSlotTypes(mainSelect.value, sub.id).some(type =>
-        isElectionFormSlotSelectable(mainSelect.value, sub.id, type)
-      )
-    );
-  }
+  subs = subs.filter(sub =>
+    getSlotTypes(mainSelect.value, sub.id).some(type =>
+      isElectionFormSlotSelectable(mainSelect.value, sub.id, type)
+    )
+  );
 
   subSelect.innerHTML = "";
   subs.forEach(sub => {
@@ -3097,11 +3095,9 @@ function updateElectionFormTypeSelect() {
   const previous = typeSelect.value;
   let types = getSlotTypes(mainSelect.value, subSelect.value);
 
-  if (!electionsState.editingId) {
-    types = types.filter(type =>
-      isElectionFormSlotSelectable(mainSelect.value, subSelect.value, type)
-    );
-  }
+  types = types.filter(type =>
+    isElectionFormSlotSelectable(mainSelect.value, subSelect.value, type)
+  );
 
   typeSelect.innerHTML = "";
   types.forEach(type => {
@@ -3225,7 +3221,10 @@ function openElectionFormModal(editId) {
     dateInput.value = presence?.date || getDefaultElectionFormDate();
   }
 
-  populateElectionFormMainSelect(!presence);
+  fillColleagueSelect(agent1, true, "— Ton nom —");
+  fillColleagueSelect(agent2, true, "— Créneau dispo —");
+  setElectionFormHierarchyDisabled(false);
+  populateElectionFormMainSelect(true);
   if (!presence && mainSelect && !mainSelect.options.length) {
     alert("Tous les créneaux ont déjà une date. Modifiez-les depuis la page de garde.");
     electionsState.editingId = null;
@@ -3237,19 +3236,13 @@ function openElectionFormModal(editId) {
     updateElectionFormSubSelect();
     if (subSelect) subSelect.value = presence.subId;
     updateElectionFormTypeSelect();
-    if (typeSelect) typeSelect.value = presence.type;
-    setElectionFormHierarchyDisabled(true);
+    if (typeSelect) typeSelect.value = presence.type || presence.creneau || "";
     if (agent1) agent1.value = presence.agent1Id || "";
     if (agent2) agent2.value = presence.agent2Id || "";
     if (statusSelect) statusSelect.value = presence.status;
     if (commentInput) commentInput.value = presence.comment || "";
-    if (isElectionToPlan(presence)) {
-      statusGroup?.classList.add("pk-module-hidden");
-    } else {
-      statusGroup?.classList.remove("pk-module-hidden");
-    }
+    statusGroup?.classList.remove("pk-module-hidden");
   } else {
-    setElectionFormHierarchyDisabled(false);
     updateElectionFormSubSelect();
     if (agent1) agent1.value = "";
     if (agent2) agent2.value = "";
@@ -3285,9 +3278,9 @@ function saveElectionPresenceFromForm() {
     ? electionsState.presences.find(p => p.id === electionsState.editingId)
     : null;
 
-  const mainId = isEdit ? editingPresence?.mainId : mainSelect?.value;
-  const subId = isEdit ? editingPresence?.subId : subSelect?.value;
-  const type = isEdit ? editingPresence?.type : (typeSelect?.value ?? "");
+  const mainId = mainSelect?.value || editingPresence?.mainId;
+  const subId = subSelect?.value || editingPresence?.subId;
+  const type = typeSelect?.value || getElectionPresenceType(editingPresence) || "";
 
   if (!date || !mainId || !subId) {
     alert("Veuillez remplir la date, le site et le sous-site.");
@@ -3343,6 +3336,30 @@ function saveElectionPresenceFromForm() {
     status,
     comment: commentInput?.value?.trim() || ""
   };
+
+  if (isEdit && editingPresence) {
+    const moved = editingPresence.mainId !== mainId
+      || editingPresence.subId !== subId
+      || getElectionPresenceType(editingPresence) !== type;
+    if (moved) {
+      if (existing && !isElectionToPlan(existing) && existing.id !== editingPresence.id) {
+        alert("Ce créneau est déjà planifié.");
+        return;
+      }
+      const oldIdx = electionsState.presences.findIndex(p => p.id === editingPresence.id);
+      if (oldIdx !== -1) {
+        electionsState.presences[oldIdx] = {
+          ...electionsState.presences[oldIdx],
+          date: "",
+          agent1Id: "",
+          agent2Id: "",
+          status: "À faire",
+          comment: ""
+        };
+      }
+      electionsState.editingId = existing?.id || null;
+    }
+  }
 
   if (existing && electionsState.editingId && existing.id !== electionsState.editingId) {
     alert("Ce créneau est déjà enregistré pour la période.");

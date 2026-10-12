@@ -1640,10 +1640,11 @@
 
   .pk-elections-home {
     padding: 0.75rem;
+    padding-bottom: 8.5rem;
   }
 
   .pk-elections-home--has-planning {
-    padding-bottom: 1rem;
+    padding-bottom: 8.5rem;
   }
 
   .pk-elections-home .pk-elections-date-header {
