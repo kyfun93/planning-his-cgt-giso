@@ -961,6 +961,14 @@ async function loadInactiveCombinationsLastMonth() {
 
 function formatDateFr(dateStr) {
   if (!dateStr) return "";
+  const parts = String(dateStr).split("-");
+  if (parts.length >= 3) {
+    const yyyy = Number(parts[0]);
+    const monthIndex = Number(parts[1]) - 1;
+    const dd = String(Number(parts[2])).padStart(2, "0");
+    const mm = monthNames[monthIndex];
+    if (mm && Number.isFinite(yyyy)) return `${dd} ${mm} ${yyyy}`;
+  }
   const d = new Date(dateStr);
   if (!isFinite(d.getTime())) return dateStr;
   const dd = String(d.getDate()).padStart(2, "0");
@@ -2141,7 +2149,9 @@ function getElectionTimeSectionLabel(sectionKey) {
 }
 
 function compareElectionPresences(a, b, includeDate = true) {
-  if (includeDate && a.date !== b.date) return a.date.localeCompare(b.date);
+  const dateA = a.date || "";
+  const dateB = b.date || "";
+  if (includeDate && dateA !== dateB) return dateA.localeCompare(dateB);
 
   const mainA = getMainAttachmentLabel(a.mainId);
   const mainB = getMainAttachmentLabel(b.mainId);
@@ -2321,7 +2331,7 @@ function isElectionPlanned(presence) {
 
 /** Pas encore de date — reste à planifier */
 function isElectionToPlan(presence) {
-  return !presence.date && !isElectionDone(presence);
+  return !presence?.date && !isElectionDone(presence);
 }
 
 function getElectionSituationLabel(presence) {
@@ -2336,11 +2346,15 @@ function getElectionProgressCounts() {
   const effectue = all.filter(isElectionDone).length;
   const planifie = all.filter(isElectionPlanned).length;
   const aPlanifier = all.filter(isElectionToPlan).length;
+  const sansBinome = all.filter(p =>
+    hasElectionPlannedDate(p) && !isElectionChosen(p) && !isElectionDone(p)
+  ).length;
   return {
     total: getExpectedElectionSlotsTotal(),
     effectue,
     planifie,
     aPlanifier,
+    sansBinome,
     couvert: all.filter(isElectionCovered).length
   };
 }
@@ -2565,8 +2579,13 @@ function normalizeElectionsState() {
     const type = presence.type ?? presence.creneau ?? "";
     return {
       ...presence,
+      date: presence.date ? String(presence.date).trim() : "",
       type,
-      creneau: presence.creneau ?? type
+      creneau: presence.creneau ?? type,
+      agent1Id: presence.agent1Id || "",
+      agent2Id: presence.agent2Id || "",
+      status: presence.status || "À faire",
+      comment: presence.comment || ""
     };
   });
 }
@@ -2575,10 +2594,15 @@ function updateElectionsPeriodSummary() {
   const summary = document.getElementById("electionsPeriodSummary");
   if (!summary) return;
 
-  const { effectue, planifie, aPlanifier } = getElectionProgressCounts();
+  const { total, effectue, planifie, aPlanifier, sansBinome } = getElectionProgressCounts();
+  const stillOpen = aPlanifier > 0 || sansBinome > 0;
 
-  summary.className = "pk-elections-period-summary" + (aPlanifier > 0 ? " pk-elections-period-summary--alert" : "");
-  summary.textContent = `${getElectionPeriodLabel()} — ${effectue} effectué · ${planifie} planifié · reste ${aPlanifier} à planifier`;
+  summary.className = "pk-elections-period-summary" + (stillOpen ? " pk-elections-period-summary--alert" : "");
+  let text = `${getElectionPeriodLabel()} — ${total} créneaux · ${planifie} planifié(s) · ${aPlanifier} à faire · ${effectue} effectué(s)`;
+  if (sansBinome > 0) {
+    text += ` · ${sansBinome} sans binôme`;
+  }
+  summary.textContent = text;
 }
 
 function renderElectionsUI() {
@@ -2591,12 +2615,30 @@ function renderElectionsHome() {
   const container = document.getElementById("electionsHome");
   if (!container) return;
 
-  container.innerHTML = "";
+  const planned = getPlannedElectionPresences();
+  const { aPlanifier } = getElectionProgressCounts();
 
-  const intro = document.createElement("p");
-  intro.className = "pk-elections-home-intro";
-  intro.textContent = "Cliquez sur « + Assigner un créneau » pour planifier. Une fois la date enregistrée, le créneau quitte ⚠️ À faire et apparaît dans 📅 Planning.";
-  container.appendChild(intro);
+  container.innerHTML = "";
+  container.classList.toggle("pk-elections-home--has-planning", planned.length > 0);
+
+  if (!planned.length) {
+    const intro = document.createElement("p");
+    intro.className = "pk-elections-home-intro";
+    intro.textContent = aPlanifier > 0
+      ? "Aucun créneau planifié. Cliquez sur « + Assigner un créneau » pour poser une date : il apparaît ici, groupé par jour."
+      : "Aucun créneau planifié pour le moment.";
+    container.appendChild(intro);
+    return;
+  }
+
+  if (aPlanifier > 0) {
+    const remaining = document.createElement("p");
+    remaining.className = "pk-elections-home-intro";
+    remaining.textContent = `${aPlanifier} créneau${aPlanifier > 1 ? "x" : ""} encore à planifier — liste dans ⚠️ À faire.`;
+    container.appendChild(remaining);
+  }
+
+  renderElectionPlanningGroups(container, planned, { showDate: false, closePlanningModal: false });
 }
 
 function createElectionRow(presence, options = {}) {
@@ -2849,6 +2891,14 @@ function closeElectionsListModals() {
   document.getElementById("electionsUncoveredModal")?.classList.add("pk-modal-hidden");
 }
 
+function closeAllElectionModals() {
+  closeElectionsListModals();
+  document.getElementById("electionsFormModal")?.classList.add("pk-modal-hidden");
+  electionsState.editingId = null;
+  setElectionFormHierarchyDisabled(false);
+  document.body.classList.remove("pk-modal-open");
+}
+
 function refreshElectionsListModals() {
   const planningModal = document.getElementById("electionsPlanningModal");
   const uncoveredModal = document.getElementById("electionsUncoveredModal");
@@ -2865,6 +2915,7 @@ function persistElectionsChange() {
   reconcileElectionSlotCatalog();
   saveElectionsToStorage();
   updateElectionsPeriodSummary();
+  renderElectionsHome();
   refreshElectionsListModals();
 }
 
@@ -2937,7 +2988,8 @@ function openElectionFormModal(editId) {
 
   populateElectionFormMainSelect(!presence);
   if (!presence && mainSelect && !mainSelect.options.length) {
-    alert("Tous les créneaux sont déjà planifiés pour la période.");
+    alert("Tous les créneaux ont déjà une date. Modifiez-les depuis la page de garde.");
+    electionsState.editingId = null;
     return;
   }
 
@@ -3015,8 +3067,20 @@ function saveElectionPresenceFromForm() {
     return;
   }
 
-  const agent1Id = agent1?.value || "";
-  const agent2Id = agent2?.value || "";
+  let agent1Id = agent1?.value || "";
+  let agent2Id = agent2?.value || "";
+  if (!agent1Id && agent2Id) {
+    agent1Id = agent2Id;
+    agent2Id = "";
+  }
+  if (!agent1Id) {
+    alert("Indiquez votre nom dans la liste (Agent 1). Le créneau ne peut pas être enregistré sans ça.");
+    return;
+  }
+  if (agent1Id && agent2Id && agent1Id === agent2Id) {
+    alert("Les deux agents du binôme doivent être différents.");
+    return;
+  }
   const creneau = type;
 
   let status = "À faire";
@@ -3056,7 +3120,8 @@ function saveElectionPresenceFromForm() {
   persistElectionsChange();
 }
 
-function createElectionPlanningRow(presence) {
+function createElectionPlanningRow(presence, options = {}) {
+  const { showDate = true, closePlanningModal = false } = options;
   const row = document.createElement("div");
   row.className = "pk-elections-planning-row";
   if (isElectionDone(presence)) row.classList.add("pk-elections-planning-row--done");
@@ -3090,11 +3155,11 @@ function createElectionPlanningRow(presence) {
 
   const actions = document.createElement("div");
   actions.className = "pk-elections-planning-actions";
-  appendElectionActionButtons(actions, presence, { closePlanningModal: true });
+  appendElectionActionButtons(actions, presence, { closePlanningModal });
   meta.appendChild(actions);
 
   row.appendChild(creneau);
-  row.appendChild(dateLine);
+  if (showDate) row.appendChild(dateLine);
   row.appendChild(binome);
   if (presence.comment && presence.comment.trim()) {
     const comment = document.createElement("div");
@@ -3105,6 +3170,33 @@ function createElectionPlanningRow(presence) {
   row.appendChild(meta);
 
   return row;
+}
+
+function renderElectionPlanningGroups(container, planned, options = {}) {
+  const { showDate = true, closePlanningModal = false } = options;
+  if (!container) return;
+
+  const byDate = new Map();
+  planned.forEach(p => {
+    const dateKey = p.date || "";
+    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+    byDate.get(dateKey).push(p);
+  });
+
+  getElectionPeriodDates().forEach(date => {
+    if (!byDate.has(date)) return;
+    const datePresences = byDate.get(date);
+    datePresences.sort((a, b) => compareElectionPresences(a, b, false));
+    const faitCount = datePresences.filter(isElectionDone).length;
+    const couvertCount = datePresences.filter(isElectionCovered).length;
+    const dateHeader = document.createElement("div");
+    dateHeader.className = "pk-elections-date-header";
+    dateHeader.textContent = `${formatDateFr(date)} — ${datePresences.length} planifié(s) · ${couvertCount} couvert(s) · ${faitCount} fait(s)`;
+    container.appendChild(dateHeader);
+    datePresences.forEach(presence => {
+      container.appendChild(createElectionPlanningRow(presence, { showDate, closePlanningModal }));
+    });
+  });
 }
 
 function renderElectionsPlanningModal() {
@@ -3123,31 +3215,7 @@ function renderElectionsPlanningModal() {
     return;
   }
 
-  const byDate = new Map();
-  planned.forEach(p => {
-    const dateKey = p.date || "";
-    if (!byDate.has(dateKey)) byDate.set(dateKey, []);
-    byDate.get(dateKey).push(p);
-  });
-
-  function appendPlanningDateGroup(dateKey, datePresences) {
-    datePresences.sort((a, b) => compareElectionPresences(a, b, false));
-    const faitCount = datePresences.filter(isElectionDone).length;
-    const couvertCount = datePresences.filter(isElectionCovered).length;
-    const dateHeader = document.createElement("div");
-    dateHeader.className = "pk-elections-date-header";
-    dateHeader.textContent = `${formatDateFr(dateKey)} — ${datePresences.length} planifié(s) · ${couvertCount} couvert(s) · ${faitCount} fait(s)`;
-    container.appendChild(dateHeader);
-    datePresences.forEach(presence => {
-      container.appendChild(createElectionPlanningRow(presence));
-    });
-  }
-
-  getElectionPeriodDates().forEach(date => {
-    if (byDate.has(date)) {
-      appendPlanningDateGroup(date, byDate.get(date));
-    }
-  });
+  renderElectionPlanningGroups(container, planned, { showDate: true, closePlanningModal: true });
 }
 
 function renderElectionsUncoveredModal() {
@@ -3161,7 +3229,10 @@ function renderElectionsUncoveredModal() {
   if (!todo.length) {
     const p = document.createElement("p");
     p.className = "pk-elections-empty";
-    p.textContent = "Tous les créneaux sont planifiés.";
+    const { sansBinome } = getElectionProgressCounts();
+    p.textContent = sansBinome > 0
+      ? "Plus aucun créneau sans date. Les dates sans binôme restent sur la page de garde."
+      : "Tous les créneaux ont une date.";
     container.appendChild(p);
     return;
   }
@@ -3311,7 +3382,9 @@ function initModuleTabs() {
     hisHeaderFilters?.classList.toggle("pk-module-hidden", !isHis);
     electionsHeaderFilters?.classList.toggle("pk-module-hidden", isHis);
 
-    if (!isHis) {
+    if (isHis) {
+      closeAllElectionModals();
+    } else {
       openElectionsModule();
     }
   }
