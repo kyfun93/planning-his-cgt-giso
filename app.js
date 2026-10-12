@@ -2,6 +2,7 @@
 
 // === Configuration Supabase ===
 // ⚠️ REMPLACEZ CES VALEURS PAR VOS CRÉDENTIALS SUPABASE
+const ELECTIONS_CLOUD_SLOT_ID = "election_state_v1";
 const SUPABASE_URL = "https://xierjvlyymyfmhojtseh.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhpZXJqdmx5eW15Zm1ob2p0c2VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNDUxODUsImV4cCI6MjA3ODcyMTE4NX0.ZvX_9vKBhy8Bjl6Z-ocLS641r1I5jB7hCC6KC0kox38";
 
@@ -294,6 +295,7 @@ async function loadSlotsForMonth(year, month) {
       .select("*")
       .gte("date", startDate)
       .lte("date", endDate)
+      .neq("id", ELECTIONS_CLOUD_SLOT_ID)
       .order("date", { ascending: true });
 
     if (error) {
@@ -350,6 +352,7 @@ async function loadHistorySlots() {
       .from("his_slots")
       .select("*")
       .lt("date", todayStr)
+      .neq("id", ELECTIONS_CLOUD_SLOT_ID)
       .order("date", { ascending: false });
 
     if (error) {
@@ -913,6 +916,7 @@ async function loadInactiveCombinationsLastMonth() {
     const { data, error } = await supabaseClient
       .from("his_slots")
       .select("main_id, sub_id, slot_type, date")
+      .neq("id", ELECTIONS_CLOUD_SLOT_ID)
       .order("date", { ascending: false });
 
     if (error) {
@@ -2060,7 +2064,8 @@ const ELECTION_PERIOD = {
 
 const electionsState = {
   presences: [],
-  editingId: null
+  editingId: null,
+  updatedAt: ""
 };
 
 function getElectionPeriodDates() {
@@ -2225,6 +2230,7 @@ function loadElectionsFromStorage() {
     }
     const data = JSON.parse(raw);
     electionsState.presences = Array.isArray(data.presences) ? data.presences : [];
+    electionsState.updatedAt = data.updatedAt || "";
   } catch (e) {
     console.error("Erreur chargement élections:", e);
     electionsState.presences = [];
@@ -2234,11 +2240,110 @@ function loadElectionsFromStorage() {
 function saveElectionsToStorage() {
   try {
     localStorage.setItem(ELECTIONS_STORAGE_KEY, JSON.stringify({
-      presences: electionsState.presences
+      presences: electionsState.presences,
+      updatedAt: electionsState.updatedAt || ""
     }));
   } catch (e) {
     console.error("Erreur sauvegarde élections:", e);
     alert("Impossible de sauvegarder les données élections (stockage local plein ?).");
+  }
+}
+
+function electionDataScore(presences) {
+  if (!Array.isArray(presences)) return 0;
+  return presences.reduce((n, p) => n
+    + (p.date ? 2 : 0)
+    + (p.agent1Id ? 1 : 0)
+    + (p.agent2Id ? 1 : 0), 0);
+}
+
+async function loadElectionsCloudPayload() {
+  if (!supabaseClient) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from("his_slots")
+      .select("label, updated_at")
+      .eq("id", ELECTIONS_CLOUD_SLOT_ID)
+      .maybeSingle();
+    if (error || !data?.label) return null;
+    const parsed = JSON.parse(data.label);
+    if (!Array.isArray(parsed.presences)) return null;
+    return {
+      presences: parsed.presences,
+      updatedAt: parsed.updatedAt || data.updated_at || ""
+    };
+  } catch (e) {
+    console.warn("Chargement cloud élections:", e);
+    return null;
+  }
+}
+
+async function saveElectionsToCloud() {
+  if (!supabaseClient) return false;
+  electionsState.updatedAt = new Date().toISOString();
+  saveElectionsToStorage();
+  try {
+    const { error } = await supabaseClient
+      .from("his_slots")
+      .upsert({
+        id: ELECTIONS_CLOUD_SLOT_ID,
+        date: "1970-01-01",
+        main_id: "_election_state",
+        sub_id: "_election_state",
+        slot_type: "state",
+        label: JSON.stringify({
+          presences: electionsState.presences,
+          updatedAt: electionsState.updatedAt
+        }),
+        max_places: 0
+      });
+    if (error) {
+      console.warn("Sauvegarde cloud élections:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn("Sauvegarde cloud élections:", e);
+    return false;
+  }
+}
+
+let electionsCloudSaveTimer = null;
+function scheduleElectionsCloudSave() {
+  clearTimeout(electionsCloudSaveTimer);
+  electionsCloudSaveTimer = setTimeout(() => {
+    saveElectionsToCloud();
+  }, 400);
+}
+
+async function syncElectionsWithCloud() {
+  const cloud = await loadElectionsCloudPayload();
+  const localScore = electionDataScore(electionsState.presences);
+  if (!cloud) {
+    if (localScore > 0) await saveElectionsToCloud();
+    return;
+  }
+
+  const cloudScore = electionDataScore(cloud.presences);
+  const takeCloud = cloudScore > localScore
+    || (cloudScore === localScore
+      && cloudScore > 0
+      && (cloud.updatedAt || "") > (electionsState.updatedAt || ""));
+
+  if (takeCloud) {
+    electionsState.presences = cloud.presences;
+    electionsState.updatedAt = cloud.updatedAt || "";
+    normalizeElectionsState();
+    repairElectionPresenceTypes();
+    syncElectionPeriodPresences();
+    saveElectionsToStorage();
+    updateElectionsPeriodLabel();
+    renderElectionsUI();
+    return;
+  }
+
+  if (localScore > cloudScore) {
+    await saveElectionsToCloud();
   }
 }
 
@@ -2984,7 +3089,9 @@ function refreshElectionsListModals() {
 /** Après ajout / modification / annulation : catalogue + résumé + modales ouvertes. */
 function persistElectionsChange() {
   reconcileElectionSlotCatalog();
+  electionsState.updatedAt = new Date().toISOString();
   saveElectionsToStorage();
+  scheduleElectionsCloudSave();
   updateElectionsPeriodSummary();
   renderElectionsHome();
   refreshElectionsListModals();
@@ -3339,6 +3446,7 @@ function initElectionsModule() {
   syncElectionPeriodPresences();
   updateElectionsPeriodLabel();
   renderElectionsUI();
+  syncElectionsWithCloud();
 
   const statusSelect = document.getElementById("electionFormStatus");
   const agent1 = document.getElementById("electionFormAgent1");
@@ -3420,6 +3528,7 @@ function openElectionsModule() {
   migrateElectionCatalogRepair();
   syncElectionPeriodPresences();
   renderElectionsUI();
+  syncElectionsWithCloud();
 }
 
 function initModuleTabs() {
