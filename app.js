@@ -2341,6 +2341,19 @@ function getElectionSituationLabel(presence) {
   return "Planifié";
 }
 
+function getElectionBadgeLabel(presence) {
+  if (isElectionDone(presence) || presence.status === "Annulé" || presence.status === "Confirmé") {
+    return presence.status;
+  }
+  if (isElectionChosen(presence)) {
+    return presence.status === "À faire" ? "Binôme prévu" : presence.status;
+  }
+  if (presence.agent1Id || presence.agent2Id || hasElectionPlannedDate(presence)) {
+    return "Créneau dispo";
+  }
+  return "À faire";
+}
+
 function getElectionProgressCounts() {
   const all = getElectionPeriodPresences();
   const effectue = all.filter(isElectionDone).length;
@@ -2671,8 +2684,9 @@ function createElectionRow(presence, options = {}) {
   path.textContent = `Site (A) : ${getMainAttachmentLabel(presence.mainId)} · Sous-site (B) : ${getSubAttachmentLabel(presence.subId)} · Type (C) : ${getElectionTypeLabel(presence.type)}`;
 
   const badge = document.createElement("span");
-  badge.className = `pk-status-badge ${getStatusCssClass(presence.status)}`;
-  badge.textContent = presence.status;
+  const badgeLabel = getElectionBadgeLabel(presence);
+  badge.className = `pk-status-badge ${badgeLabel === "Créneau dispo" ? "pk-status--a-faire" : getStatusCssClass(presence.status)}`;
+  badge.textContent = badgeLabel;
 
   header.appendChild(creneauTitle);
   header.appendChild(badge);
@@ -2688,13 +2702,7 @@ function createElectionRow(presence, options = {}) {
     row.appendChild(dateLine);
   }
 
-  const binome = document.createElement("div");
-  binome.className = "pk-elections-binome";
-  if (!isElectionChosen(presence)) {
-    binome.classList.add("pk-elections-binome--missing");
-  }
-  binome.textContent = `Binôme : ${formatElectionBinome(presence)}`;
-  row.appendChild(binome);
+  appendElectionBinomePickers(row, presence);
 
   if (presence.comment && presence.comment.trim()) {
     const comment = document.createElement("div");
@@ -2759,21 +2767,82 @@ function appendElectionActionButtons(container, presence, options = {}) {
   }
 }
 
-function fillColleagueSelect(selectEl, includeEmpty) {
+function fillColleagueSelect(selectEl, includeEmpty, emptyLabel = "— Non assigné —", excludeId = "") {
   if (!selectEl) return;
   selectEl.innerHTML = "";
   if (includeEmpty) {
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "— Non assigné —";
+    opt.textContent = emptyLabel;
     selectEl.appendChild(opt);
   }
   COLLEAGUES.forEach(c => {
+    if (excludeId && c.id === excludeId) return;
     const opt = document.createElement("option");
     opt.value = c.id;
     opt.textContent = c.name;
     selectEl.appendChild(opt);
   });
+}
+
+function applyElectionAgentChange(presenceId, field, colleagueId) {
+  const idx = electionsState.presences.findIndex(p => p.id === presenceId);
+  if (idx === -1) return;
+
+  const current = electionsState.presences[idx];
+  const next = { ...current, [field]: colleagueId || "" };
+
+  if (!next.agent1Id && next.agent2Id) {
+    next.agent1Id = next.agent2Id;
+    next.agent2Id = "";
+  }
+  if (!next.agent1Id) {
+    persistElectionsChange();
+    return;
+  }
+  if (next.agent1Id && next.agent2Id && next.agent1Id === next.agent2Id) {
+    alert("Les deux agents du binôme doivent être différents.");
+    persistElectionsChange();
+    return;
+  }
+  if (next.agent1Id && next.agent2Id && next.status === "À faire") {
+    next.status = "Binôme prévu";
+  }
+  if (!(next.agent1Id && next.agent2Id) && next.status === "Binôme prévu") {
+    next.status = "À faire";
+  }
+
+  electionsState.presences[idx] = next;
+  persistElectionsChange();
+}
+
+function createElectionAgentSelect(presence, field) {
+  const select = document.createElement("select");
+  select.className = "pk-select pk-elections-agent-select";
+  select.setAttribute("aria-label", field === "agent1Id" ? "Agent 1" : "Créneau dispo");
+  const otherId = field === "agent1Id" ? presence.agent2Id : presence.agent1Id;
+  const allowEmpty = field === "agent2Id" || !presence.agent1Id;
+  fillColleagueSelect(select, allowEmpty, "Créneau dispo", otherId);
+  select.value = presence[field] || "";
+  select.addEventListener("change", () => {
+    applyElectionAgentChange(presence.id, field, select.value);
+  });
+  return select;
+}
+
+function appendElectionBinomePickers(parent, presence) {
+  const wrap = document.createElement("div");
+  wrap.className = "pk-elections-binome-pickers";
+  if (!isElectionChosen(presence)) {
+    wrap.classList.add("pk-elections-binome--missing");
+  }
+  wrap.appendChild(createElectionAgentSelect(presence, "agent1Id"));
+  const sep = document.createElement("span");
+  sep.className = "pk-elections-binome-sep";
+  sep.textContent = "/";
+  wrap.appendChild(sep);
+  wrap.appendChild(createElectionAgentSelect(presence, "agent2Id"));
+  parent.appendChild(wrap);
 }
 
 function getElectionFormDate() {
@@ -3138,19 +3207,13 @@ function createElectionPlanningRow(presence, options = {}) {
     ? formatDateFr(presence.date)
     : "À faire";
 
-  const binome = document.createElement("div");
-  binome.className = "pk-elections-planning-binome";
-  if (!isElectionChosen(presence)) {
-    binome.classList.add("pk-elections-binome--missing");
-  }
-  binome.textContent = formatElectionBinome(presence);
-
   const meta = document.createElement("div");
   meta.className = "pk-elections-planning-meta";
 
   const badge = document.createElement("span");
-  badge.className = `pk-status-badge ${getStatusCssClass(presence.status)}`;
-  badge.textContent = presence.status;
+  const badgeLabel = getElectionBadgeLabel(presence);
+  badge.className = `pk-status-badge ${badgeLabel === "Créneau dispo" ? "pk-status--a-faire" : getStatusCssClass(presence.status)}`;
+  badge.textContent = badgeLabel;
   meta.appendChild(badge);
 
   const actions = document.createElement("div");
@@ -3160,7 +3223,7 @@ function createElectionPlanningRow(presence, options = {}) {
 
   row.appendChild(creneau);
   if (showDate) row.appendChild(dateLine);
-  row.appendChild(binome);
+  appendElectionBinomePickers(row, presence);
   if (presence.comment && presence.comment.trim()) {
     const comment = document.createElement("div");
     comment.className = "pk-elections-planning-comment";
@@ -3301,8 +3364,8 @@ function initElectionsModule() {
     });
   }
 
-  fillColleagueSelect(agent1, true);
-  fillColleagueSelect(agent2, true);
+  fillColleagueSelect(agent1, true, "— Ton nom —");
+  fillColleagueSelect(agent2, true, "— Créneau dispo —");
 
   document.getElementById("electionsAddBtn")?.addEventListener("click", () => openElectionFormModal(null));
 
