@@ -2384,8 +2384,12 @@ function getStatusCssClass(status) {
 }
 
 function formatElectionBinome(presence) {
-  if (!presence.agent1Id || !presence.agent2Id) return "À faire";
-  return `${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
+  const name1 = presence.agent1Id ? getColleagueName(presence.agent1Id) : "";
+  const name2 = presence.agent2Id ? getColleagueName(presence.agent2Id) : "";
+  if (name1 && name2) return `${name1} / ${name2}`;
+  if (name1) return `${name1} / créneau dispo`;
+  if (name2) return `${name2} / créneau dispo`;
+  return "Créneau dispo";
 }
 
 function formatElectionWhatsAppBlock(presence) {
@@ -2686,12 +2690,10 @@ function createElectionRow(presence, options = {}) {
 
   const binome = document.createElement("div");
   binome.className = "pk-elections-binome";
-  if (!presence.agent1Id || !presence.agent2Id) {
+  if (!isElectionChosen(presence)) {
     binome.classList.add("pk-elections-binome--missing");
-    binome.textContent = "Binôme : à faire";
-  } else {
-    binome.textContent = `Binôme : ${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
   }
+  binome.textContent = `Binôme : ${formatElectionBinome(presence)}`;
   row.appendChild(binome);
 
   if (presence.comment && presence.comment.trim()) {
@@ -3138,12 +3140,10 @@ function createElectionPlanningRow(presence, options = {}) {
 
   const binome = document.createElement("div");
   binome.className = "pk-elections-planning-binome";
-  if (!presence.agent1Id || !presence.agent2Id) {
+  if (!isElectionChosen(presence)) {
     binome.classList.add("pk-elections-binome--missing");
-    binome.textContent = "Binôme : à faire";
-  } else {
-    binome.textContent = `${getColleagueName(presence.agent1Id)} / ${getColleagueName(presence.agent2Id)}`;
   }
+  binome.textContent = formatElectionBinome(presence);
 
   const meta = document.createElement("div");
   meta.className = "pk-elections-planning-meta";
