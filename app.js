@@ -1105,10 +1105,12 @@ function initTopModal() {
   const btn = document.getElementById("showTopBtn");
   const modal = document.getElementById("topModal");
   const closeBtn = document.getElementById("closeTopModal");
+  const closeBottomBtn = document.getElementById("closeTopModalBottom");
   if (!btn || !modal || !closeBtn) return;
 
   btn.addEventListener("click", openTopModal);
   closeBtn.addEventListener("click", closeTopModal);
+  if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeTopModal);
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeTopModal();
   });

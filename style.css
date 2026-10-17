@@ -977,6 +977,14 @@
       padding: 1rem;
       padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
+
+    .pk-modal-scrollable .pk-top-footer {
+      flex-shrink: 0;
+      margin: 0;
+      padding: 0.8rem 1rem max(0.8rem, env(safe-area-inset-bottom));
+      border-top: 1px solid rgba(0, 229, 255, 0.2);
+      background: var(--bg-panel);
+    }
     
     /* Masquer le header quand le formulaire est ouvert sur mobile */
     body.pk-modal-open .pk-header {
@@ -1276,6 +1284,17 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
+  }
+
+  .pk-top-footer {
+    margin-top: 0.4rem;
+    padding-top: 0.8rem;
+    padding-bottom: max(0.2rem, env(safe-area-inset-bottom));
+  }
+
+  .pk-top-footer .pk-btn {
+    width: 100%;
+    min-height: 48px;
   }
 
   .pk-top-note {
