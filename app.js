@@ -1125,7 +1125,7 @@ async function openTopModal() {
 
   try {
     const ranking = await getHisRanking();
-    const top3 = ranking.filter(r => r.count > 0).slice(0, 3);
+    const top = ranking.filter(r => r.count > 0).slice(0, 10);
     container.innerHTML = "";
 
     const note = document.createElement("p");
@@ -1133,7 +1133,7 @@ async function openTopModal() {
     note.textContent = "Classement sur les HIS déjà passés uniquement (les créneaux à venir ne comptent pas).";
     container.appendChild(note);
 
-    if (top3.length === 0) {
+    if (top.length === 0) {
       const p = document.createElement("p");
       p.className = "pk-inactive-ok";
       p.textContent = "Aucune inscription HIS enregistrée pour le moment.";
@@ -1141,13 +1141,13 @@ async function openTopModal() {
       return;
     }
 
-    top3.forEach((entry, index) => {
+    top.forEach((entry, index) => {
       const item = document.createElement("div");
       item.className = `pk-top-item ${TOP_MEDAL_CLASSES[index] || ""}`;
 
       const medal = document.createElement("span");
-      medal.className = "pk-top-medal";
-      medal.textContent = TOP_MEDALS[index];
+      medal.className = TOP_MEDALS[index] ? "pk-top-medal" : "pk-top-medal pk-top-rank";
+      medal.textContent = TOP_MEDALS[index] || String(index + 1);
 
       const info = document.createElement("div");
       info.className = "pk-top-info";
