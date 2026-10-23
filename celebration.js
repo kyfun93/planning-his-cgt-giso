@@ -8,10 +8,10 @@
   const CELEBRATION_ENABLED = true;
   // 2 novembre 2026, 23:59 heure de Paris. Passé cette date, plus rien ne s'affiche.
   const CELEBRATION_ENDS_AT = "2026-11-02T22:59:59Z";
-  const CAMPAIGN_ID = "elections-2026-merci";
+  const CAMPAIGN_ID = "elections-2026-retraite";
   const PASSES = 2;
   const STORAGE_KEY = "pk-celebration-seen-" + CAMPAIGN_ID;
-  const MESSAGE = "BRAVO À TOUS ! • MERCI POUR VOTRE MOBILISATION !!! ☺ 😉 ☻";
+  const MESSAGE = "BRAVO À TOUS ! • MERCI POUR VOTRE MOBILISATION !!! ☺ 😉 ☻ • NOUS SOUHAITONS UNE BONNE RETRAITE À JR";
 
   const ROWS = 8;
   const PITCH = 5;
