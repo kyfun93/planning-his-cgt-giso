@@ -1,0 +1,86 @@
+/* Bandeau DMD éphémère. Supprimer ce fichier et sa balise dans index.html retire tout le style. */
+
+.pk-celebration {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  height: 46px;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 176, 48, 0.45);
+  border-radius: 3px;
+  box-shadow:
+    0 0 12px rgba(255, 42, 24, 0.22),
+    0 0 22px rgba(255, 176, 40, 0.14);
+  left: 12px;
+  right: 12px;
+  top: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.pk-celebration-screen {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.pk-celebration-screen canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pk-celebration-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.pk-celebration.is-static {
+  height: 48px;
+}
+
+.pk-celebration.is-static .pk-celebration-status {
+  position: relative;
+  width: auto;
+  height: auto;
+  margin: 0;
+  clip: auto;
+  overflow: hidden;
+  white-space: normal;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  text-align: center;
+  font: 600 11px/1.15 system-ui, sans-serif;
+  letter-spacing: 0.03em;
+  color: #ffc14a;
+  background:
+    radial-gradient(rgba(255, 160, 40, 0.16) 0.7px, transparent 0.75px) 0 0 / 4px 4px,
+    #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk-celebration {
+    transition: none;
+  }
+}
+
+@media print {
+  .pk-celebration {
+    display: none !important;
+  }
+}

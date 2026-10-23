@@ -11,6 +11,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <link rel="stylesheet" href="style.css?v=20261017b" />
+  <!-- Bandeau éphémère élections : retirer cette ligne et celebration.css pour le supprimer. -->
+  <link rel="stylesheet" href="celebration.css?v=20261023c" />
 </head>
 <body>
   <header class="pk-header">
@@ -19,7 +21,8 @@
         <h1>PLANNING HIS CGT GISO</h1>
         <p>IP / GISO</p>
       </div>
-      <nav class="pk-module-tabs" aria-label="Modules">
+      <!-- Onglets masqués tant que les élections sont en sommeil (ELECTIONS_MODULE_ENABLED dans app.js). -->
+      <nav id="moduleTabs" class="pk-module-tabs pk-module-hidden" aria-label="Modules">
         <button id="tabHis" type="button" class="pk-tab pk-tab--active">Planning HIS</button>
         <button id="tabElections" type="button" class="pk-tab">Planning élections</button>
       </nav>
@@ -297,6 +300,8 @@
   <!-- *** TRÈS IMPORTANT : chargement du JS *** -->
   <!-- Supabase doit être chargé avant app.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261017b"></script>
+  <script src="app.js?v=20261023a"></script>
+  <!-- Bandeau éphémère élections : retirer cette ligne et celebration.js pour le supprimer. -->
+  <script src="celebration.js?v=20261023l"></script>
 </body>
 </html>

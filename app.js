@@ -2045,7 +2045,11 @@ function getSubAttachmentLabel(id) {
 
 // =============================================================================
 // === Module Planning élections (localStorage, indépendant du HIS) ===
+// Élections 2026 terminées. Laisser à false : l'onglet reste caché.
+// Remettre à true vers 2030 pour réafficher « Planning élections ».
 // =============================================================================
+
+const ELECTIONS_MODULE_ENABLED = false;
 
 const ELECTIONS_STORAGE_KEY = "planning_elections_cgt_giso_v1";
 
@@ -3517,6 +3521,8 @@ function repairElectionPresenceTypes() {
 }
 
 function initElectionsModule() {
+  if (!ELECTIONS_MODULE_ENABLED) return;
+
   loadElectionsFromStorage();
   normalizeElectionsState();
   cleanupElectionDemoData();
@@ -3614,6 +3620,13 @@ function openElectionsModule() {
 }
 
 function initModuleTabs() {
+  const moduleTabs = document.getElementById("moduleTabs");
+  if (!ELECTIONS_MODULE_ENABLED) {
+    moduleTabs?.classList.add("pk-module-hidden");
+    return;
+  }
+  moduleTabs?.classList.remove("pk-module-hidden");
+
   const tabHis = document.getElementById("tabHis");
   const tabElections = document.getElementById("tabElections");
   const hisModule = document.getElementById("hisModule");
