@@ -145,104 +145,6 @@
     font-size: 0.9rem;
   }
   
-  /* MENU DÉROULANT HIÉRARCHIQUE COMPACT */
-  
-  .pk-dropdown-menu {
-    position: relative;
-    display: inline-block;
-  }
-  
-  .pk-btn-dropdown {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-width: 200px;
-    padding: 0.4rem 0.8rem;
-    text-align: left;
-  }
-  
-  .pk-dropdown-arrow {
-    margin-left: 0.5rem;
-    font-size: 0.7rem;
-    transition: transform 0.2s;
-  }
-  
-  .pk-dropdown-content {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.3rem;
-    min-width: 220px;
-    max-width: 300px;
-    max-height: 400px;
-    overflow-y: auto;
-    background: var(--bg-panel);
-    border: 1px solid rgba(0, 229, 255, 0.4);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-neon);
-    z-index: 1000;
-    padding: 0.3rem 0;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    will-change: transform, opacity;
-  }
-  
-  .pk-dropdown-hidden {
-    display: none;
-  }
-  
-  .pk-dropdown-item {
-    position: relative;
-  }
-  
-  .pk-dropdown-link {
-    display: flex;
-    align-items: center;
-    padding: 0.6rem 1rem;
-    color: var(--text-main);
-    text-decoration: none;
-    font-size: 0.9rem;
-    transition: background var(--transition-fast);
-    cursor: pointer;
-    min-height: 44px;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  .pk-dropdown-link:hover {
-    background: var(--bg-panel-alt);
-  }
-  
-  .pk-dropdown-link:active {
-    background: rgba(0, 229, 255, 0.2);
-  }
-  
-  .pk-dropdown-main > .pk-dropdown-link {
-    font-weight: 600;
-    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-  }
-  
-  .pk-dropdown-sub > .pk-dropdown-link {
-    padding-left: 1.5rem;
-    font-size: 0.85rem;
-  }
-  
-  .pk-dropdown-slot > .pk-dropdown-link {
-    padding-left: 2.5rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-  }
-  
-  .pk-dropdown-submenu {
-    background: var(--bg-panel-alt);
-    border-left: 2px solid rgba(0, 229, 255, 0.3);
-    margin-left: 0.5rem;
-  }
-  
-  .pk-dropdown-submenu.pk-dropdown-hidden {
-    display: none;
-  }
-  
   /* LAYOUT PRINCIPAL */
   
   .pk-main {
@@ -815,12 +717,6 @@
       left: 0;
       right: 0;
     }
-    
-    .pk-dropdown-content {
-      max-height: 70vh;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-    }
   }
   
   @media (max-width: 480px) {
@@ -1183,13 +1079,6 @@
     
     .pk-day {
       min-height: 90px;
-    }
-    
-    .pk-dropdown-link {
-      padding: 0.6rem 0.8rem;
-      min-height: 44px;
-      display: flex;
-      align-items: center;
     }
   }
   

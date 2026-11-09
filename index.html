@@ -10,9 +10,8 @@
   <meta http-equiv="Expires" content="0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="stylesheet" href="style.css?v=20261109e" />
-  <!-- Bandeau éphémère élections : retirer cette ligne et celebration.css pour le supprimer. -->
-  <link rel="stylesheet" href="celebration.css?v=20261023c" />
+  <link rel="stylesheet" href="style.css?v=20261109f" />
+  <!-- Prochaine annonce : remettre celebration.css et celebration.js, puis renseigner celebration.js. -->
 </head>
 <body>
   <header class="pk-header">
@@ -29,12 +28,6 @@
       </nav>
     </div>
     <div id="hisHeaderFilters" class="pk-header-filters">
-      <!-- Menu de sélection hiérarchique compact -->
-      <div class="pk-dropdown-menu">
-        <div id="dropdownMenu" class="pk-dropdown-content pk-dropdown-hidden">
-          <!-- rempli par JS -->
-        </div>
-      </div>
       <select id="colleagueSelect" class="pk-select">
         <!-- rempli par JS -->
       </select>
@@ -301,8 +294,6 @@
   <!-- *** TRÈS IMPORTANT : chargement du JS *** -->
   <!-- Supabase doit être chargé avant app.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261023a"></script>
-  <!-- Bandeau éphémère élections : retirer cette ligne et celebration.js pour le supprimer. -->
-  <script src="celebration.js?v=20261024a"></script>
+  <script src="app.js?v=20261109f"></script>
 </body>
 </html>

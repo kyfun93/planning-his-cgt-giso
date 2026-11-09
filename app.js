@@ -249,11 +249,7 @@ function getSlotTypes(mainId, subId) {
   const state = {
     currentYear: new Date().getFullYear(),
     currentMonth: new Date().getMonth(), // 0-11
-  selectedMainId: "all",      // "all" pour tous les sites, ou un mainId spécifique
-  selectedSubId: "all",        // "all" pour tous les sous-sites, ou un subId spécifique
-  selectedSlotType: "all",     // "all" pour tous les types, ou un slotType spécifique
   selectedColleagueId: "",
-  step: "A",                 // étape actuelle : A, B, ou C
   slots: [],                 // slots chargés depuis Supabase
   registrations: []          // inscriptions chargées depuis Supabase
   };
@@ -529,7 +525,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     initSupabase();
   }
   
-  initSteps();
   initColleagueSelect();
   initMonthNav();
   initModal();
@@ -553,145 +548,6 @@ async function refreshData() {
   
   // Charger toutes les inscriptions
   state.registrations = await loadRegistrations();
-}
-
-// --- Menu déroulant hiérarchique compact ---
-
-function initSteps() {
-  const dropdownMenu = document.getElementById("dropdownMenu");
-
-  if (!dropdownMenu) return;
-
-  dropdownMenu.innerHTML = "";
-  // Le menu reste caché par défaut
-
-  // Créer le menu hiérarchique
-  getMainAttachments().forEach(main => {
-    const mainItem = document.createElement("div");
-    mainItem.className = "pk-dropdown-item pk-dropdown-main";
-
-    const mainLink = document.createElement("a");
-    mainLink.href = "#";
-    mainLink.textContent = main.label;
-    mainLink.className = "pk-dropdown-link";
-    mainLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      toggleSubmenu(mainItem, main.id);
-    });
-
-    const subMenu = document.createElement("div");
-    subMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
-    subMenu.dataset.mainId = main.id;
-
-    // Créer les sous-éléments (B)
-    const subAttachments = getSubAttachments(main.id);
-    subAttachments.forEach(sub => {
-      const subItem = document.createElement("div");
-      subItem.className = "pk-dropdown-item pk-dropdown-sub";
-
-      const subLink = document.createElement("a");
-      subLink.href = "#";
-      subLink.textContent = sub.label;
-      subLink.className = "pk-dropdown-link";
-      subLink.addEventListener("click", (e) => {
-        e.preventDefault();
-        toggleSlotMenu(subItem, main.id, sub.id);
-      });
-
-      const slotMenu = document.createElement("div");
-      slotMenu.className = "pk-dropdown-submenu pk-dropdown-hidden";
-      slotMenu.dataset.mainId = main.id;
-      slotMenu.dataset.subId = sub.id;
-
-      // Créer les types de slots (C)
-      const slotTypes = getSlotTypes(main.id, sub.id);
-      slotTypes.forEach(slotType => {
-        const slotItem = document.createElement("div");
-        slotItem.className = "pk-dropdown-item pk-dropdown-slot";
-
-        const slotLink = document.createElement("a");
-        slotLink.href = "#";
-        slotLink.textContent = slotType || "(sans type)";
-        slotLink.className = "pk-dropdown-link";
-        slotLink.addEventListener("click", async (e) => {
-          e.preventDefault();
-          // Valider la sélection
-          state.selectedMainId = main.id;
-          state.selectedSubId = sub.id;
-          state.selectedSlotType = slotType;
-
-          // Fermer le menu
-          closeDropdown();
-
-          // Recharger les données et afficher le calendrier
-          await refreshData();
-          renderCalendar();
-        });
-
-        slotItem.appendChild(slotLink);
-        slotMenu.appendChild(slotItem);
-      });
-
-      subItem.appendChild(subLink);
-      subItem.appendChild(slotMenu);
-      subMenu.appendChild(subItem);
-    });
-
-    mainItem.appendChild(mainLink);
-    mainItem.appendChild(subMenu);
-    dropdownMenu.appendChild(mainItem);
-  });
-
-  // Fermer le menu si on clique ailleurs
-  document.addEventListener("click", (e) => {
-    if (!dropdownMenu.contains(e.target)) {
-      closeDropdown();
-    }
-  });
-}
-
-function toggleDropdown() {
-  const dropdownMenu = document.getElementById("dropdownMenu");
-  if (dropdownMenu) {
-    dropdownMenu.classList.toggle("pk-dropdown-hidden");
-  }
-}
-
-function closeDropdown() {
-  const dropdownMenu = document.getElementById("dropdownMenu");
-  if (dropdownMenu) {
-    dropdownMenu.classList.add("pk-dropdown-hidden");
-    // Fermer tous les sous-menus
-    document.querySelectorAll(".pk-dropdown-submenu").forEach(menu => {
-      menu.classList.add("pk-dropdown-hidden");
-    });
-  }
-}
-
-function toggleSubmenu(mainItem, mainId) {
-  const subMenu = mainItem.querySelector(".pk-dropdown-submenu");
-  if (!subMenu) return;
-
-  document.querySelectorAll(".pk-dropdown-submenu[data-main-id]").forEach(menu => {
-    if (menu !== subMenu) {
-      menu.classList.add("pk-dropdown-hidden");
-    }
-  });
-
-  subMenu.classList.toggle("pk-dropdown-hidden");
-}
-
-function toggleSlotMenu(subItem, mainId, subId) {
-  const slotMenu = subItem.querySelector(".pk-dropdown-submenu");
-  if (!slotMenu) return;
-
-  document.querySelectorAll(".pk-dropdown-submenu[data-sub-id]").forEach(menu => {
-    if (menu !== slotMenu) {
-      menu.classList.add("pk-dropdown-hidden");
-    }
-  });
-
-  slotMenu.classList.toggle("pk-dropdown-hidden");
 }
 
 // --- Sélecteur collègues ---
@@ -751,16 +607,6 @@ function initColleagueSelect() {
   // --- Rendu calendrier ---
   
   function renderCalendar() {
-  // Si "Tous les sites" est sélectionné, on peut afficher directement
-  // Sinon, vérifier que toutes les étapes sont validées
-  if (state.selectedMainId !== "all" && (!state.selectedMainId || !state.selectedSubId || !state.selectedSlotType)) {
-    const cal = document.getElementById("calendar");
-    if (cal) {
-      cal.innerHTML = "<p style='text-align: center; padding: 2rem; color: var(--text-muted);'>Veuillez compléter les étapes A, B et C pour afficher le calendrier, ou sélectionnez 'Tous les sites' pour une vue globale.</p>";
-    }
-    return;
-  }
-
     const cal = document.getElementById("calendar");
     const monthLabel = document.getElementById("currentMonthLabel");
   if (!cal || !monthLabel) {
@@ -800,14 +646,7 @@ function initColleagueSelect() {
       weekday.textContent = weekdayNamesShort[new Date(year, month, day).getDay()];
       dayDiv.appendChild(weekday);
   
-    // Filtrage selon mainId, subId et slotType (ou "all" pour tout afficher)
-    const daySlots = state.slots.filter(s => {
-      if (s.date !== dateStr) return false;
-      if (state.selectedMainId !== "all" && s.main_id !== state.selectedMainId) return false;
-      if (state.selectedSubId !== "all" && s.sub_id !== state.selectedSubId) return false;
-      if (state.selectedSlotType !== "all" && s.slot_type !== state.selectedSlotType) return false;
-      return true;
-    });
+    const daySlots = state.slots.filter(s => s.date === dateStr);
   
       const summary = document.createElement("div");
       summary.className = "pk-day-slots-summary";
@@ -828,19 +667,10 @@ function initColleagueSelect() {
         summary.innerHTML = daySlots
           .map((slot, index) => {
             const count = state.registrations.filter(r => r.slot_id === slot.id).length;
-            // Si vue globale, afficher le site complet, sinon juste le label
-            let displayText;
             const titleDisplay = formatSlotTitleForDisplay(slot);
-            if (state.selectedMainId === "all") {
-              const mainLabel = getMainAttachmentLabel(slot.main_id);
-              const subLabel = getSubAttachmentLabel(slot.sub_id);
-              displayText = `${mainLabel} → ${subLabel} → ${titleDisplay} : ${count}/${slot.max_places}`;
-            } else {
-              const mainLabel = getMainAttachmentLabel(slot.main_id);
-              const subLabel = getSubAttachmentLabel(slot.sub_id);
-              const displayLabel = subLabel ? `${subLabel} – ${titleDisplay}` : `${mainLabel} – ${titleDisplay}`;
-              displayText = `${displayLabel} : ${count}/${slot.max_places}`;
-            }
+            const mainLabel = getMainAttachmentLabel(slot.main_id);
+            const subLabel = getSubAttachmentLabel(slot.sub_id);
+            const displayText = `${mainLabel} → ${subLabel} → ${titleDisplay} : ${count}/${slot.max_places}`;
             
             // Si plusieurs créneaux, utiliser une couleur différente pour chacun
             let colorStyle = "";
@@ -1765,24 +1595,8 @@ function initAddSlotModal() {
       " " +
       dateObj.getFullYear();
   
-  // Filtrage des slots pour ce jour selon mainId, subId et slotType (ou "all" pour tout afficher)
-  let daySlots = state.slots.filter(s => {
-    if (s.date !== dateStr) return false;
-    if (state.selectedMainId !== "all" && s.main_id !== state.selectedMainId) return false;
-    if (state.selectedSubId !== "all" && s.sub_id !== state.selectedSubId) return false;
-    if (state.selectedSlotType !== "all" && s.slot_type !== state.selectedSlotType) return false;
-    return true;
-  });
-
-  // Titre de la modale
-  if (state.selectedMainId === "all") {
-    title.textContent = `${dateLabel} – Tous les sites (vue globale)`;
-  } else {
-    const mainLabel = getMainAttachmentLabel(state.selectedMainId);
-    const subLabel = getSubAttachmentLabel(state.selectedSubId);
-    const slotTypeLabel = state.selectedSlotType !== "all" ? state.selectedSlotType : "";
-    title.textContent = `${dateLabel} – ${subLabel || mainLabel}${slotTypeLabel ? " – " + slotTypeLabel : ""}`;
-  }
+  const daySlots = state.slots.filter(s => s.date === dateStr);
+  title.textContent = `${dateLabel} – Tous les sites (vue globale)`;
   
     if (daySlots.length === 0) {
       const p = document.createElement("p");

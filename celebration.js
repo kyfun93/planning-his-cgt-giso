@@ -1,17 +1,18 @@
-/* Bandeau DMD éphémère, isolé du planning.
-   Pour tout désactiver : CELEBRATION_ENABLED = false.
-   Pour le retirer du site : supprimer ce fichier, celebration.css,
-   et les deux balises commentées dans index.html. */
+/* Bannière défilante, prête pour une prochaine annonce.
+   index.html ne charge pas ce fichier tant qu'une annonce n'est pas préparée.
+   Pour une annonce :
+   1. Renseigner les quatre constantes ci-dessous.
+   2. Remettre celebration.css et celebration.js dans index.html.
+   Sans message, ou après la date de fin, rien ne s'affiche et aucune animation ne démarre. */
 (function () {
   "use strict";
 
-  const CELEBRATION_ENABLED = true;
-  // 2 novembre 2026, 23:59 heure de Paris. Passé cette date, plus rien ne s'affiche.
-  const CELEBRATION_ENDS_AT = "2026-11-02T22:59:59Z";
-  const CAMPAIGN_ID = "elections-2026-retraite";
+  const CELEBRATION_ENABLED = false;
+  const CELEBRATION_ENDS_AT = "";
+  const CAMPAIGN_ID = "";
   const PASSES = 2;
   const STORAGE_KEY = "pk-celebration-seen-" + CAMPAIGN_ID;
-  const MESSAGE = "BRAVO À TOUS ! • MERCI POUR VOTRE MOBILISATION !!! ☺ 😉 ☻ • NOUS SOUHAITONS UNE BONNE RETRAITE À JR";
+  const MESSAGE = "";
 
   const ROWS = 8;
   const PITCH = 5;
@@ -163,7 +164,7 @@
   }
 
   function boot() {
-    if (!CELEBRATION_ENABLED) return;
+    if (!CELEBRATION_ENABLED || !MESSAGE || !CELEBRATION_ENDS_AT) return;
     if (Date.now() >= Date.parse(CELEBRATION_ENDS_AT)) return;
     if (seen()) return;
 
