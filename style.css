@@ -1467,11 +1467,29 @@
 
   .pk-header-top {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
     justify-content: space-between;
     gap: 0.6rem;
     width: 100%;
+  }
+
+  .pk-header-title {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .pk-header-title h1,
+  .pk-header-title p {
+    white-space: nowrap;
+  }
+
+  a.pk-app-link {
+    flex: 0 0 auto;
+    text-decoration: none;
+    white-space: nowrap;
+    align-self: center;
+    padding: 0.45rem 0.7rem;
   }
 
   .pk-module-tabs {
@@ -1829,7 +1847,8 @@
 
   @media (max-width: 480px) {
     .pk-header-top {
-      flex-direction: column;
+      flex-direction: row;
+      align-items: center;
     }
 
     .pk-module-tabs {
