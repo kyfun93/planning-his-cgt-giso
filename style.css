@@ -1490,6 +1490,7 @@
     white-space: nowrap;
     align-self: center;
     padding: 0.45rem 0.7rem;
+    font-weight: 700;
   }
 
   .pk-module-tabs {
