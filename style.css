@@ -1481,9 +1481,12 @@
     flex: 1 1 auto;
   }
 
-  .pk-header-title h1,
-  .pk-header-title p {
+  .pk-header-title h1 {
     white-space: nowrap;
+  }
+
+  .pk-header-title p {
+    white-space: normal;
   }
 
   a.pk-app-link {
