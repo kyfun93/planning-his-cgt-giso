@@ -766,6 +766,7 @@
       flex-direction: column;
       align-items: flex-start;
       padding: 0.6rem 0.8rem;
+      padding-top: max(3.4rem, calc(env(safe-area-inset-top, 0px) + 1rem));
     }
   
     .pk-header-filters {
@@ -825,6 +826,7 @@
   @media (max-width: 480px) {
     .pk-header {
       padding: 0.5rem 0.6rem;
+      padding-top: max(3.4rem, calc(env(safe-area-inset-top, 0px) + 1rem));
     }
     
     .pk-header-title h1 {
