@@ -392,11 +392,68 @@ async function createSlot(slotData) {
   }
 }
 
+/** Famille de créneau : Jour, Nuit, Matin… Deux « Jour » comptent comme le même créneau, « Jour » et « Nuit » non. */
+function getSlotTimeBucket(slotType) {
+  const t = (slotType || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[éèêë]/g, "e");
+  if (!t) return "";
+  if (t.includes("nuit")) return "nuit";
+  if (t.includes("3x8") || t.includes("3×8")) return "3x8";
+  if (t === "matin") return "matin";
+  if (t.includes("apres-midi")) return "apres-midi";
+  if (t === "log") return "log";
+  if (t.includes("jour")) return "jour";
+  return t;
+}
+
+function slotTimeBucketLabel(slotType) {
+  const bucket = getSlotTimeBucket(slotType);
+  if (bucket === "nuit") return "Nuit";
+  if (bucket === "jour") return "Jour";
+  if (bucket === "matin") return "Matin";
+  if (bucket === "apres-midi") return "Après-midi";
+  if (bucket === "3x8") return "3x8";
+  if (bucket === "log") return "Log";
+  return (slotType || "").trim();
+}
+
+function findSameDaySameBucketSlot(colleagueId, slot) {
+  if (!colleagueId || !slot) return null;
+  const bucket = getSlotTimeBucket(slot.slot_type);
+  if (!bucket) return null;
+  return state.slots.find(other => {
+    if (other.id === slot.id || other.date !== slot.date) return false;
+    if (getSlotTimeBucket(other.slot_type) !== bucket) return false;
+    return state.registrations.some(
+      r => r.slot_id === other.id && r.colleague_id === colleagueId
+    );
+  }) || null;
+}
+
+function sameBucketRegistrationMessage(colleagueId, conflictSlot) {
+  const name = getColleagueName(colleagueId);
+  const label = slotTimeBucketLabel(conflictSlot.slot_type);
+  const main = getMainAttachmentLabel(conflictSlot.main_id);
+  const sub = getSubAttachmentLabel(conflictSlot.sub_id);
+  const where = sub ? `${main} – ${sub}` : main;
+  return `${name} a déjà un créneau ${label} ce jour-là (${where}).`;
+}
+
 // S'inscrire à un slot
 async function registerToSlot(slotId, colleagueId) {
   if (!supabaseClient) {
     console.error("❌ Supabase non configuré");
     return null;
+  }
+
+  const slot = state.slots.find(s => s.id === slotId);
+  const conflict = findSameDaySameBucketSlot(colleagueId, slot);
+  if (conflict) {
+    const error = new Error(sameBucketRegistrationMessage(colleagueId, conflict));
+    error.code = "same-bucket";
+    throw error;
   }
 
   try {
@@ -812,20 +869,9 @@ function formatDateFr(dateStr) {
   return `${dd} ${mm} ${yyyy}`;
 }
 
-/** Pour un créneau "nuit", affiche "nuit du 8 au 9 mars" (nuit du J-1 au J). Sinon retourne le type tel quel. */
+/** Le type s'affiche tel quel (« Nuit », « Jour », « Matin »…). La date reste celle du créneau. */
 function formatSlotTypeForDisplay(slot) {
-  const rawType = (slot.slot_type || "").trim();
-  const isNuit = /nuit/i.test(rawType);
-  if (!isNuit || !slot.date) return rawType;
-  const parts = slot.date.split("-").map(Number);
-  if (parts.length !== 3) return rawType;
-  const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-  const prevDay = new Date(dateObj);
-  prevDay.setDate(prevDay.getDate() - 1);
-  const dayPrev = prevDay.getDate();
-  const dayEnd = dateObj.getDate();
-  const monthStr = monthNames[dateObj.getMonth()];
-  return `nuit du ${dayPrev} au ${dayEnd} ${monthStr}`;
+  return (slot.slot_type || "").trim();
 }
 
 function formatSlotTitleForDisplay(slot) {
@@ -1660,8 +1706,11 @@ function initAddSlotModal() {
           const already = regs.some(
           r => r.colleague_id === state.selectedColleagueId
           );
+          const conflictSlot = already
+            ? null
+            : findSameDaySameBucketSlot(state.selectedColleagueId, slot);
   
-          if (!already && count < max) {
+          if (!already && count < max && !conflictSlot) {
             const btnIn = document.createElement("button");
             btnIn.className = "pk-btn";
           btnIn.textContent = "M'inscrire";
@@ -1672,11 +1721,21 @@ function initAddSlotModal() {
               renderCalendar();
               openDayModal(dateStr);
             } catch (error) {
-              alert("Erreur lors de l'inscription. Vérifiez la console pour plus de détails.");
+              alert(error.code === "same-bucket"
+                ? error.message
+                : "Erreur lors de l'inscription. Vérifiez la console pour plus de détails.");
               console.error("❌ Erreur:", error);
             }
             });
             actions.appendChild(btnIn);
+          }
+
+          if (conflictSlot) {
+            const info = document.createElement("span");
+            info.style.fontSize = "0.75rem";
+            info.style.color = "var(--text-muted)";
+            info.textContent = sameBucketRegistrationMessage(state.selectedColleagueId, conflictSlot);
+            actions.appendChild(info);
           }
   
           if (already) {
